@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="negative_balance">#FFD32F2F</color>
+    <color name="positive_balance">#FF4CAF50</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="warning_balance">#FFFFA726</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="account_name">Account Name</string>
+    <string name="accounts">Accounts</string>
+    <string name="add_account">Add Account</string>
+    <string name="add_bill">Add Bill</string>
+    <string name="add_income">Add Income</string>
+    <string name="amount">Amount</string>
+    <string name="app_name">CashFlow</string>
+    <string name="balance">Balance</string>
+    <string name="bi_weekly">Bi-weekly</string>
+    <string name="bills">Bills</string>
+    <string name="cancel">Cancel</string>
+    <string name="cash_flow_negative">Cash Flow Negative</string>
+    <string name="cash_flow_warning">Cash Flow Warning</string>
+    <string name="checking_account">Checking Account</string>
+    <string name="credit_card">Credit Card</string>
+    <string name="custom">Custom</string>
+    <string name="days_30">30 Days</string>
+    <string name="days_60">60 Days</string>
+    <string name="days_90">90 Days</string>
+    <string name="delete">Delete</string>
+    <string name="due_date">Due Date</string>
+    <string name="edit">Edit</string>
+    <string name="income">Income</string>
+    <string name="pay_date">Pay Date</string>
+    <string name="recurring">Recurring</string>
+    <string name="salary">Salary</string>
+    <string name="save">Save</string>
+    <string name="savings_account">Savings Account</string>
+    <string name="starting_balance">Starting Balance</string>
+    <string name="time_period">Time Period</string>
+    <string name="timeline">Timeline</string>
+    <string name="transactions">Transactions</string>
+    <string name="upcoming_bill">Upcoming Bill</string>
+    <string name="upcoming_payday">Upcoming Payday</string>
+    <style name="Theme.CashFlow" parent="android:Theme.Material.Light.NoActionBar"/>
+</resources>
