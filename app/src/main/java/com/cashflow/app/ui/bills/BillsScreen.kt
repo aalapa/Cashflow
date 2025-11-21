@@ -106,6 +106,9 @@ fun BillsScreen(repository: CashFlowRepository) {
                                 occurrences = occurrences,
                                 onEdit = { viewModel.handleIntent(BillsIntent.EditBill(bill)) },
                                 onDelete = { viewModel.handleIntent(BillsIntent.DeleteBill(bill)) },
+                                onEditAmount = { occurrence ->
+                                    viewModel.handleIntent(BillsIntent.ShowEditAmountDialog(occurrence))
+                                },
                                 onMarkPaid = { occurrence ->
                                     viewModel.handleIntent(BillsIntent.ShowMarkPaidDialog(occurrence))
                                 }
@@ -119,6 +122,9 @@ fun BillsScreen(repository: CashFlowRepository) {
                         bills = state.bills,
                         onEdit = { bill -> viewModel.handleIntent(BillsIntent.EditBill(bill)) },
                         onDelete = { bill -> viewModel.handleIntent(BillsIntent.DeleteBill(bill)) },
+                        onEditAmount = { occurrence ->
+                            viewModel.handleIntent(BillsIntent.ShowEditAmountDialog(occurrence))
+                        },
                         onMarkPaid = { occurrence ->
                             viewModel.handleIntent(BillsIntent.ShowMarkPaidDialog(occurrence))
                         }
@@ -148,6 +154,17 @@ fun BillsScreen(repository: CashFlowRepository) {
                 }
             )
         }
+        
+        val billToEditAmount = state.billToEditAmount
+        if (state.showEditAmountDialog && billToEditAmount != null) {
+            EditBillAmountDialog(
+                occurrence = billToEditAmount,
+                onDismiss = { viewModel.handleIntent(BillsIntent.HideEditAmountDialog) },
+                onSave = { newAmount ->
+                    viewModel.handleIntent(BillsIntent.EditBillAmount(billToEditAmount, newAmount))
+                }
+            )
+        }
     }
 }
 
@@ -157,6 +174,7 @@ fun BillItem(
     occurrences: List<BillOccurrence>,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onEditAmount: (BillOccurrence) -> Unit,
     onMarkPaid: (BillOccurrence) -> Unit
 ) {
     Card(
@@ -231,6 +249,7 @@ fun BillItem(
                 occurrences.take(6).forEach { occurrence ->
                     BillOccurrenceItem(
                         occurrence = occurrence,
+                        onEditAmount = { onEditAmount(occurrence) },
                         onMarkPaid = { onMarkPaid(occurrence) }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -250,6 +269,7 @@ fun BillItem(
 @Composable
 fun BillOccurrenceItem(
     occurrence: BillOccurrence,
+    onEditAmount: () -> Unit,
     onMarkPaid: () -> Unit
 ) {
     Row(
@@ -283,6 +303,17 @@ fun BillOccurrenceItem(
                 color = if (occurrence.isPaid) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFFEF4444)
             )
             if (!occurrence.isPaid) {
+                IconButton(
+                    onClick = onEditAmount,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Edit Amount",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
                 Button(
                     onClick = onMarkPaid,
                     modifier = Modifier.height(32.dp)
@@ -676,6 +707,7 @@ fun DateSortedBillsView(
     bills: List<Bill>,
     onEdit: (Bill) -> Unit,
     onDelete: (Bill) -> Unit,
+    onEditAmount: (BillOccurrence) -> Unit,
     onMarkPaid: (BillOccurrence) -> Unit
 ) {
     // Collect all occurrences and sort by date
@@ -709,6 +741,7 @@ fun DateSortedBillsView(
                         bill = bill,
                         onEdit = { onEdit(bill) },
                         onDelete = { onDelete(bill) },
+                        onEditAmount = { onEditAmount(occurrence) },
                         onMarkPaid = { onMarkPaid(occurrence) }
                     )
                 }
@@ -723,6 +756,7 @@ fun DateSortedBillOccurrenceItem(
     bill: Bill,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onEditAmount: () -> Unit,
     onMarkPaid: () -> Unit
 ) {
     Card(
@@ -784,18 +818,28 @@ fun DateSortedBillOccurrenceItem(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = onEdit) {
+                            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                                 Icon(
                                     Icons.Default.Edit,
-                                    contentDescription = "Edit",
-                                    tint = MaterialTheme.colorScheme.primary
+                                    contentDescription = "Edit Bill",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
-                            IconButton(onClick = onDelete) {
+                            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.error
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            IconButton(onClick = onEditAmount, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Edit Amount",
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                             Button(
@@ -810,6 +854,54 @@ fun DateSortedBillOccurrenceItem(
             }
         }
     }
+}
+
+@Composable
+fun EditBillAmountDialog(
+    occurrence: BillOccurrence,
+    onDismiss: () -> Unit,
+    onSave: (Double) -> Unit
+) {
+    var amountText by remember { 
+        mutableStateOf(occurrence.amount.toString()) 
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Bill Amount") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                Text(
+                    text = "${occurrence.bill.name} - ${formatDate(occurrence.dueDate)}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it },
+                    label = { Text("Amount") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val amount = amountText.toDoubleOrNull() ?: occurrence.amount
+                    onSave(amount)
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 fun getDaySuffix(day: Int): String {

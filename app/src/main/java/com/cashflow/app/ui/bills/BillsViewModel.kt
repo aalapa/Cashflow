@@ -125,6 +125,27 @@ class BillsViewModel(
             is BillsIntent.SetViewMode -> {
                 _state.update { it.copy(viewMode = intent.mode) }
             }
+            is BillsIntent.EditBillAmount -> {
+                viewModelScope.launch {
+                    try {
+                        repository.setBillOverride(
+                            billId = intent.occurrence.bill.id,
+                            date = intent.occurrence.dueDate,
+                            amount = intent.newAmount
+                        )
+                        _state.update { it.copy(showEditAmountDialog = false, billToEditAmount = null) }
+                        loadFutureOccurrences()
+                    } catch (e: Exception) {
+                        _state.update { it.copy(error = e.message) }
+                    }
+                }
+            }
+            is BillsIntent.ShowEditAmountDialog -> {
+                _state.update { it.copy(showEditAmountDialog = true, billToEditAmount = intent.occurrence) }
+            }
+            is BillsIntent.HideEditAmountDialog -> {
+                _state.update { it.copy(showEditAmountDialog = false, billToEditAmount = null) }
+            }
         }
     }
 }

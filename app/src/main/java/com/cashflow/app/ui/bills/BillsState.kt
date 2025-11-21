@@ -18,7 +18,9 @@ data class BillsState(
     val editingBill: Bill? = null,
     val showMarkPaidDialog: Boolean = false,
     val billToMarkPaid: BillOccurrence? = null,
-    val viewMode: BillsViewMode = BillsViewMode.DEFAULT
+    val viewMode: BillsViewMode = BillsViewMode.DEFAULT,
+    val showEditAmountDialog: Boolean = false,
+    val billToEditAmount: BillOccurrence? = null
 )
 
 sealed class BillsIntent {
@@ -32,5 +34,8 @@ sealed class BillsIntent {
     object HideMarkPaidDialog : BillsIntent()
     data class ShowMarkPaidDialog(val occurrence: BillOccurrence) : BillsIntent()
     data class SetViewMode(val mode: BillsViewMode) : BillsIntent()
+    data class EditBillAmount(val occurrence: BillOccurrence, val newAmount: Double) : BillsIntent()
+    object HideEditAmountDialog : BillsIntent()
+    data class ShowEditAmountDialog(val occurrence: BillOccurrence) : BillsIntent()
 }
 
