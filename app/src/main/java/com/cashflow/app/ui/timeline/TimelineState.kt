@@ -7,7 +7,11 @@ data class TimelineState(
     val cashFlowDays: List<CashFlowDay> = emptyList(),
     val selectedTimePeriod: TimePeriod = TimePeriod.DAYS_30,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val showDayDetailDialog: Boolean = false,
+    val selectedDay: CashFlowDay? = null,
+    val selectedDayPreviousMonth: CashFlowDay? = null,
+    val selectedDayLastYear: CashFlowDay? = null
 )
 
 enum class TimePeriod(val days: Int) {
@@ -21,5 +25,7 @@ enum class TimePeriod(val days: Int) {
 sealed class TimelineIntent {
     data class SetTimePeriod(val period: TimePeriod) : TimelineIntent()
     object Refresh : TimelineIntent()
+    data class ShowDayDetail(val day: CashFlowDay) : TimelineIntent()
+    object HideDayDetail : TimelineIntent()
 }
 

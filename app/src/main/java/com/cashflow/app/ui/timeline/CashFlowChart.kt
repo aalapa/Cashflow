@@ -58,7 +58,7 @@ fun CashFlowChart(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    val maxBalance = cashFlowDays.maxOfOrNull { kotlin.math.abs(it.balance) } ?: 1000.0
+                    val maxBalance = cashFlowDays.maxOfOrNull { it.balance } ?: 1000.0
                     val minBalance = cashFlowDays.minOfOrNull { it.balance } ?: 0.0
                     
                     // Top label (max)
@@ -153,17 +153,26 @@ fun CashFlowChart(
 
 @Composable
 fun BarChart(cashFlowDays: List<CashFlowDay>) {
-    val maxBalance = cashFlowDays.maxOfOrNull { kotlin.math.abs(it.balance) } ?: 1000.0
+    val maxBalance = cashFlowDays.maxOfOrNull { it.balance } ?: 1000.0
     val minBalance = cashFlowDays.minOfOrNull { it.balance } ?: 0.0
-    val range = maxBalance - minBalance
-    val zeroLine = if (range > 0) (-minBalance / range).toFloat() else 0.5f
+    val range = (maxBalance - minBalance).coerceAtLeast(100.0)
 
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val barWidth = size.width / cashFlowDays.size.coerceAtLeast(1)
+        val barWidth = (size.width / cashFlowDays.size.coerceAtLeast(1)).coerceAtLeast(1f)
         val chartHeight = size.height * 0.85f
         val paddingTop = size.height * 0.05f
-        val paddingBottom = size.height * 0.1f
-        val zeroY = paddingTop + (1f - zeroLine) * chartHeight
+        
+        // Calculate zero line position
+        val zeroY = if (minBalance >= 0) {
+            // All positive: zero at bottom
+            paddingTop + chartHeight
+        } else if (maxBalance <= 0) {
+            // All negative: zero at top
+            paddingTop
+        } else {
+            // Mixed: proportional position
+            paddingTop + chartHeight * (maxBalance / range).toFloat()
+        }
 
         // Draw zero line
         drawLine(
@@ -188,11 +197,6 @@ fun BarChart(cashFlowDays: List<CashFlowDay>) {
         // Draw bars
         cashFlowDays.forEachIndexed { index, day ->
             val x = index * barWidth + barWidth / 2
-            val normalizedBalance = if (range > 0) {
-                ((day.balance - minBalance) / range).toFloat()
-            } else {
-                0.5f
-            }
             
             val color = when {
                 day.isNegative -> Color(0xFFEF4444)
@@ -200,24 +204,37 @@ fun BarChart(cashFlowDays: List<CashFlowDay>) {
                 else -> Color(0xFF10B981)
             }
 
+            // Calculate bar padding based on bar width (adaptive padding)
+            val barPadding = if (barWidth > 4.dp.toPx()) {
+                2.dp.toPx()
+            } else {
+                (barWidth * 0.1f).coerceAtLeast(0.5f)
+            }
+            val effectiveBarWidth = (barWidth - 2 * barPadding).coerceAtLeast(1f)
+
+            // Calculate bar height as pixels from zero line
+            val barHeightInPixels = if (range > 0) {
+                (kotlin.math.abs(day.balance) / range * chartHeight).toFloat()
+            } else {
+                0f
+            }
+
             if (day.balance >= 0) {
                 // Positive balance: bar extends upward from zero line
-                val barY = paddingTop + (1f - normalizedBalance) * chartHeight
+                val barY = (zeroY - barHeightInPixels).coerceAtLeast(paddingTop)
                 val barHeight = (zeroY - barY).coerceAtLeast(1f)
                 drawRect(
                     color = color,
-                    topLeft = Offset(x - barWidth / 2 + 2.dp.toPx(), barY),
-                    size = Size(barWidth - 4.dp.toPx(), barHeight)
+                    topLeft = Offset(x - effectiveBarWidth / 2, barY),
+                    size = Size(effectiveBarWidth, barHeight)
                 )
             } else {
                 // Negative balance: bar extends downward from zero line
-                val barY = zeroY
-                // Calculate height from zero line to the normalized position
-                val barHeight = ((zeroLine - normalizedBalance) * chartHeight).coerceAtLeast(1f)
+                val barHeight = barHeightInPixels.coerceAtMost(chartHeight - (zeroY - paddingTop)).coerceAtLeast(1f)
                 drawRect(
                     color = color,
-                    topLeft = Offset(x - barWidth / 2 + 2.dp.toPx(), barY),
-                    size = Size(barWidth - 4.dp.toPx(), barHeight)
+                    topLeft = Offset(x - effectiveBarWidth / 2, zeroY),
+                    size = Size(effectiveBarWidth, barHeight)
                 )
             }
         }
@@ -226,18 +243,27 @@ fun BarChart(cashFlowDays: List<CashFlowDay>) {
 
 @Composable
 fun LineChart(cashFlowDays: List<CashFlowDay>) {
-    val maxBalance = cashFlowDays.maxOfOrNull { kotlin.math.abs(it.balance) } ?: 1000.0
+    val maxBalance = cashFlowDays.maxOfOrNull { it.balance } ?: 1000.0
     val minBalance = cashFlowDays.minOfOrNull { it.balance } ?: 0.0
-    val range = maxBalance - minBalance
-    val zeroLine = if (range > 0) (-minBalance / range).toFloat() else 0.5f
+    val range = (maxBalance - minBalance).coerceAtLeast(100.0)
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val chartWidth = size.width * 0.98f
         val chartHeight = size.height * 0.85f
         val paddingX = size.width * 0.01f
         val paddingTop = size.height * 0.05f
-        val paddingBottom = size.height * 0.1f
-        val zeroY = paddingTop + (1f - zeroLine) * chartHeight
+        
+        // Calculate zero line position
+        val zeroY = if (minBalance >= 0) {
+            // All positive: zero at bottom
+            paddingTop + chartHeight
+        } else if (maxBalance <= 0) {
+            // All negative: zero at top
+            paddingTop
+        } else {
+            // Mixed: proportional position
+            paddingTop + chartHeight * (maxBalance / range).toFloat()
+        }
 
         // Draw zero line
         drawLine(
@@ -265,13 +291,15 @@ fun LineChart(cashFlowDays: List<CashFlowDay>) {
 
             cashFlowDays.forEachIndexed { index, day ->
                 val x = paddingX + (index.toFloat() / (cashFlowDays.size - 1).coerceAtLeast(1)) * chartWidth
-                val normalizedBalance = if (range > 0) {
-                    ((day.balance - minBalance) / range).toFloat()
+                
+                // Calculate y position from zero line
+                val yOffset = if (range > 0) {
+                    (day.balance / range * chartHeight).toFloat()
                 } else {
-                    0.5f
+                    0f
                 }
-                val y = paddingTop + (1f - normalizedBalance) * chartHeight
-                val point = Offset(x, y)
+                val y = zeroY - yOffset
+                val point = Offset(x, y.coerceIn(paddingTop, paddingTop + chartHeight))
 
                 if (index == 0) {
                     path.moveTo(point.x, point.y)

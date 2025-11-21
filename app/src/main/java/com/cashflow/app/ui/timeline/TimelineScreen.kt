@@ -1,10 +1,13 @@
 package com.cashflow.app.ui.timeline
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -153,13 +156,211 @@ fun TimelineScreen(repository: CashFlowRepository) {
                     CalendarMonthView(
                         monthKey = monthKey,
                         days = days,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        onDayClick = { day ->
+                            viewModel.handleIntent(TimelineIntent.ShowDayDetail(day))
+                        }
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
     }
+    
+    // Day Detail Dialog
+    if (state.showDayDetailDialog) {
+        val selectedDay = state.selectedDay
+        if (selectedDay != null) {
+            DayDetailDialog(
+                selectedDay = selectedDay,
+                previousMonthDay = state.selectedDayPreviousMonth,
+                lastYearDay = state.selectedDayLastYear,
+                onDismiss = { viewModel.handleIntent(TimelineIntent.HideDayDetail) }
+            )
+        }
+    }
+}
+
+@Composable
+fun DayDetailDialog(
+    selectedDay: com.cashflow.app.domain.model.CashFlowDay,
+    previousMonthDay: com.cashflow.app.domain.model.CashFlowDay?,
+    lastYearDay: com.cashflow.app.domain.model.CashFlowDay?,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = formatDateLong(selectedDay.date),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                // Current Day Balance
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = when {
+                            selectedDay.isNegative -> Color(0xFFEF4444).copy(alpha = 0.1f)
+                            selectedDay.isWarning -> Color(0xFFFFB020).copy(alpha = 0.1f)
+                            else -> Color(0xFF10B981).copy(alpha = 0.1f)
+                        }
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Current Balance",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = String.format("$%.2f", selectedDay.balance),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                selectedDay.isNegative -> Color(0xFFEF4444)
+                                selectedDay.isWarning -> Color(0xFFFFB020)
+                                else -> Color(0xFF10B981)
+                            }
+                        )
+                    }
+                }
+                
+                Divider()
+                
+                // Historical Comparison
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Historical Comparison",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    
+                    // Previous Month
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Same date last month:",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (previousMonthDay != null) {
+                                // Show arrow if comparison is possible
+                                val isHigher = selectedDay.balance > previousMonthDay.balance
+                                Icon(
+                                    imageVector = if (isHigher) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                    contentDescription = if (isHigher) "Higher" else "Lower",
+                                    tint = if (isHigher) Color(0xFF10B981) else Color(0xFFEF4444),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Text(
+                                text = if (previousMonthDay != null) {
+                                    String.format("$%.2f", previousMonthDay.balance)
+                                } else {
+                                    "N/A"
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (previousMonthDay != null) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
+                    
+                    // Last Year
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Same date last year:",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (lastYearDay != null) {
+                                // Show arrow if comparison is possible
+                                val isHigher = selectedDay.balance > lastYearDay.balance
+                                Icon(
+                                    imageVector = if (isHigher) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                    contentDescription = if (isHigher) "Higher" else "Lower",
+                                    tint = if (isHigher) Color(0xFF10B981) else Color(0xFFEF4444),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Text(
+                                text = if (lastYearDay != null) {
+                                    String.format("$%.2f", lastYearDay.balance)
+                                } else {
+                                    "N/A"
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (lastYearDay != null) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+fun formatDateLong(date: kotlinx.datetime.LocalDate): String {
+    val monthName = when (date.monthNumber) {
+        1 -> "January"
+        2 -> "February"
+        3 -> "March"
+        4 -> "April"
+        5 -> "May"
+        6 -> "June"
+        7 -> "July"
+        8 -> "August"
+        9 -> "September"
+        10 -> "October"
+        11 -> "November"
+        12 -> "December"
+        else -> ""
+    }
+    val daySuffix = when (date.dayOfMonth) {
+        1, 21, 31 -> "st"
+        2, 22 -> "nd"
+        3, 23 -> "rd"
+        else -> "th"
+    }
+    return "$monthName ${date.dayOfMonth}$daySuffix, ${date.year}"
 }
 
 @Composable
@@ -238,7 +439,8 @@ fun TimelineContent(cashFlowDays: List<com.cashflow.app.domain.model.CashFlowDay
 fun CalendarMonthView(
     monthKey: String,
     days: List<com.cashflow.app.domain.model.CashFlowDay>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDayClick: (com.cashflow.app.domain.model.CashFlowDay) -> Unit = {}
 ) {
     // Get the first day of the month from the first day in the list
     val firstDataDay = days.first().date
@@ -345,12 +547,15 @@ fun CalendarMonthView(
                     ) {
                         if (dayNum != null) {
                             val dayData = daysMap[dayNum]
-                            CalendarDayCell(
-                                day = dayNum,
-                                balance = dayData?.balance,
-                                isNegative = dayData?.isNegative ?: false,
-                                isWarning = dayData?.isWarning ?: false
-                            )
+                            if (dayData != null) {
+                                CalendarDayCell(
+                                    day = dayNum,
+                                    balance = dayData.balance,
+                                    isNegative = dayData.isNegative,
+                                    isWarning = dayData.isWarning,
+                                    onClick = { onDayClick(dayData) }
+                                )
+                            }
                         }
                     }
                 }
@@ -362,25 +567,27 @@ fun CalendarMonthView(
 @Composable
 fun CalendarDayCell(
     day: Int,
-    balance: Double?,
+    balance: Double,
     isNegative: Boolean,
-    isWarning: Boolean
+    isWarning: Boolean,
+    onClick: () -> Unit = {}
 ) {
     val backgroundColor = when {
         isNegative -> Color(0xFFEF4444) // Red
         isWarning -> Color(0xFFFFB020) // Amber
-        balance != null && balance > 0 -> Color(0xFF10B981) // Green
+        balance > 0 -> Color(0xFF10B981) // Green
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
 
     val textColor = when {
-        isNegative || isWarning -> Color.White
-        balance != null && balance > 0 -> Color.White
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        isNegative || isWarning || balance > 0 -> Color.White
+        else -> MaterialTheme.colorScheme.onSurface
     }
 
     Card(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = backgroundColor
         ),
@@ -399,15 +606,13 @@ fun CalendarDayCell(
                 fontWeight = FontWeight.Bold,
                 color = textColor
             )
-            if (balance != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = formatCurrencyCompact(balance),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 9.sp,
-                    color = textColor
-                )
-            }
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = formatCurrencyCompact(balance),
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 9.sp,
+                color = textColor
+            )
         }
     }
 }

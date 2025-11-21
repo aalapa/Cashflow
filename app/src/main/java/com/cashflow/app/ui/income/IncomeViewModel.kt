@@ -44,9 +44,11 @@ class IncomeViewModel(
                     val endDate = kotlinx.datetime.LocalDate.fromEpochDays(today.toEpochDays() + 365) // Next year
                     
                     val occurrencesMap = incomeList.associateWith { income ->
+                        // Get future occurrences and filter out already received ones
                         repository.getFutureIncomeOccurrences(income, today, endDate)
+                            .filter { !it.isReceived }
                     }.mapKeys { it.key.id }
-                    
+
                     _state.update { it.copy(incomeOccurrences = occurrencesMap) }
                 }
         }

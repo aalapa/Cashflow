@@ -44,7 +44,9 @@ class BillsViewModel(
                     val endDate = kotlinx.datetime.LocalDate.fromEpochDays(today.toEpochDays() + 365) // Next year
                     
                     val occurrencesMap = bills.associateWith { bill ->
+                        // Get future occurrences and filter out already paid ones
                         repository.getFutureBillOccurrences(bill, today, endDate)
+                            .filter { !it.isPaid }
                     }.mapKeys { it.key.id }
                     
                     _state.update { it.copy(billOccurrences = occurrencesMap) }

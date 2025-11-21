@@ -23,6 +23,7 @@ import com.cashflow.app.di.AppModule
 import com.cashflow.app.ui.accounts.AccountsScreen
 import com.cashflow.app.ui.bills.BillsScreen
 import com.cashflow.app.ui.income.IncomeScreen
+import com.cashflow.app.ui.analyze.AnalyzeScreen
 import com.cashflow.app.ui.settings.SettingsScreen
 import com.cashflow.app.ui.settings.SettingsViewModel
 import com.cashflow.app.ui.timeline.TimelineScreen
@@ -35,6 +36,7 @@ sealed class Screen(val route: String, val title: String, val icon: androidx.com
     object Income : Screen("income", "Income", Icons.Default.AttachMoney)
     object Transactions : Screen("transactions", "Log", Icons.Default.History)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    object Analyze : Screen("analyze", "Analyze", Icons.Default.QueryStats)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,15 +59,42 @@ fun CashFlowNavigation(
     val prefs = context.getSharedPreferences("cashflow_prefs", Context.MODE_PRIVATE)
     val initialDarkTheme = prefs.getBoolean("dark_theme", false)
 
+    var showMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { },
                 actions = {
-                    IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
+                    IconButton(onClick = { showMenu = !showMenu }) {
                         Icon(
                             Icons.Default.MoreVert,
-                            contentDescription = "Settings"
+                            contentDescription = "Menu"
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Analyze") },
+                            onClick = {
+                                showMenu = false
+                                navController.navigate(Screen.Analyze.route)
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.QueryStats, contentDescription = null)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Settings") },
+                            onClick = {
+                                showMenu = false
+                                navController.navigate(Screen.Settings.route)
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Settings, contentDescription = null)
+                            }
                         )
                     }
                 },
@@ -122,7 +151,14 @@ fun CashFlowNavigation(
                     viewModel = SettingsViewModel(
                         initialDarkTheme = initialDarkTheme,
                         onThemeChanged = onThemeChanged
-                    )
+                    ),
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Analyze.route) {
+                AnalyzeScreen(
+                    repository = repository,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }

@@ -61,7 +61,87 @@ class TimelineViewModel(
                 // Trigger recalculation by updating state
                 _state.update { it }
             }
+            is TimelineIntent.ShowDayDetail -> {
+                viewModelScope.launch {
+                    try {
+                        val selectedDate = intent.day.date
+                        val accounts = accountsFlow.first()
+                        
+                        // Calculate a far back start date to capture all historical data
+                        val historicalStartDate = LocalDate(selectedDate.year - 2, 1, 1)
+                        
+                        // Calculate previous month same date
+                        val previousMonthDate = getPreviousMonthDate(selectedDate)
+                        val previousMonthDay = if (previousMonthDate != null && previousMonthDate >= historicalStartDate) {
+                            // Calculate from far back to get accurate balance on that date
+                            val cashFlowDays = repository.calculateCashFlow(historicalStartDate, previousMonthDate, accounts)
+                            cashFlowDays.lastOrNull()
+                        } else null
+                        
+                        // Calculate last year same date
+                        val lastYearDate = getLastYearDate(selectedDate)
+                        val lastYearDay = if (lastYearDate != null && lastYearDate >= historicalStartDate) {
+                            // Calculate from far back to get accurate balance on that date
+                            val cashFlowDays = repository.calculateCashFlow(historicalStartDate, lastYearDate, accounts)
+                            cashFlowDays.lastOrNull()
+                        } else null
+                        
+                        _state.update {
+                            it.copy(
+                                showDayDetailDialog = true,
+                                selectedDay = intent.day,
+                                selectedDayPreviousMonth = previousMonthDay,
+                                selectedDayLastYear = lastYearDay
+                            )
+                        }
+                    } catch (e: Exception) {
+                        _state.update { it.copy(error = e.message) }
+                    }
+                }
+            }
+            is TimelineIntent.HideDayDetail -> {
+                _state.update {
+                    it.copy(
+                        showDayDetailDialog = false,
+                        selectedDay = null,
+                        selectedDayPreviousMonth = null,
+                        selectedDayLastYear = null
+                    )
+                }
+            }
         }
+    }
+    
+    private fun getPreviousMonthDate(date: LocalDate): LocalDate? {
+        return try {
+            val previousMonthNumber = if (date.monthNumber == 1) 12 else date.monthNumber - 1
+            val previousYear = if (date.monthNumber == 1) date.year - 1 else date.year
+            
+            // Handle month-end dates
+            val maxDayInPreviousMonth = getDaysInMonth(previousYear, previousMonthNumber)
+            val day = minOf(date.dayOfMonth, maxDayInPreviousMonth)
+            
+            LocalDate(previousYear, previousMonthNumber, day)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    private fun getLastYearDate(date: LocalDate): LocalDate? {
+        return try {
+            LocalDate(date.year - 1, date.month, date.dayOfMonth)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    private fun getDaysInMonth(year: Int, month: Int): Int {
+        val monthEnum = kotlinx.datetime.Month(month)
+        return monthEnum.length(isLeapYear(year))
+    }
+    
+    private fun isLeapYear(year: Int): Boolean {
+        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
     }
 
     private suspend fun calculateCashFlow(accounts: List<Account>, currentState: TimelineState) {

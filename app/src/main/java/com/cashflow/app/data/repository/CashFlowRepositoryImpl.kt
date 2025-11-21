@@ -120,7 +120,8 @@ class CashFlowRepositoryImpl(
             description = "Bill payment",
             relatedBillId = billId
         )
-        val transactionId = transactionDao.insertTransaction(transaction.toEntity())
+        // insertTransaction automatically updates account balance
+        val transactionId = insertTransaction(transaction)
         
         // Create bill payment record
         val payment = BillPaymentEntity(
@@ -132,15 +133,7 @@ class CashFlowRepositoryImpl(
             timestamp = timestamp,
             transactionId = transactionId
         )
-        billPaymentDao.insertPayment(payment)
-        
-        // Update account balance
-        val account = accountDao.getAccountById(accountId)
-        account?.let {
-            accountDao.updateAccount(it.copy(currentBalance = it.currentBalance - amount))
-        }
-        
-        return payment.id
+        return billPaymentDao.insertPayment(payment)
     }
 
     override suspend fun markIncomeAsReceived(incomeId: Long, date: LocalDate, accountId: Long, amount: Double): Long {
@@ -158,15 +151,8 @@ class CashFlowRepositoryImpl(
             description = "Income received",
             relatedIncomeId = incomeId
         )
-        val transactionId = transactionDao.insertTransaction(transaction.toEntity())
-        
-        // Update account balance
-        val account = accountDao.getAccountById(accountId)
-        account?.let {
-            accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + amount))
-        }
-        
-        return transactionId
+        // insertTransaction automatically updates account balance
+        return insertTransaction(transaction)
     }
 
     override suspend fun isBillPaid(billId: Long, dueDate: LocalDate): Boolean {
@@ -209,15 +195,29 @@ class CashFlowRepositoryImpl(
         val occurrences = mutableListOf<IncomeOccurrence>()
         val incomeOverrides = getIncomeOverrides(income.id)
         
+        // Get all transactions for this income to check if received
+        val transactions = transactionDao.getTransactionsBetween(startDate, endDate).first().map { it.toDomain() }
+        
         var currentDate = startDate
         while (currentDate <= endDate) {
             if (shouldOccurOnDate(income.startDate, null, income.recurrenceType, currentDate)) {
                 val amount = incomeOverrides[currentDate] ?: income.amount
+                
+                // Check if this income occurrence has been received
+                val receivedTransaction = transactions.find { 
+                    it.type == com.cashflow.app.data.model.TransactionType.INCOME && 
+                    it.relatedIncomeId == income.id && 
+                    it.date == currentDate 
+                }
+                
                 occurrences.add(
                     IncomeOccurrence(
                         income = income,
                         date = currentDate,
-                        amount = amount
+                        amount = amount,
+                        isReceived = receivedTransaction != null,
+                        receivedDate = receivedTransaction?.date,
+                        receivedIntoAccountId = receivedTransaction?.accountId
                     )
                 )
             }
