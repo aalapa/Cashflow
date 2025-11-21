@@ -32,7 +32,8 @@ object AppModule {
                 db.incomeDao(),
                 db.billDao(),
                 db.billPaymentDao(),
-                db.transactionDao()
+                db.transactionDao(),
+                db
             )
         }
         return repository!!

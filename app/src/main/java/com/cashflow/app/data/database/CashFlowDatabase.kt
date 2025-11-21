@@ -20,7 +20,7 @@ import com.cashflow.app.data.entity.*
         BillPaymentEntity::class,
         TransactionEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

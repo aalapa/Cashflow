@@ -4,6 +4,7 @@ enum class TransactionType {
     INCOME,
     BILL_PAYMENT,
     MANUAL_ADJUSTMENT,
-    CREDIT_CARD_PAYMENT
+    CREDIT_CARD_PAYMENT,
+    TRANSFER // Transfer between accounts
 }
 

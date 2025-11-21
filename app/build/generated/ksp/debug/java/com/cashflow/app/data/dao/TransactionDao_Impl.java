@@ -52,7 +52,7 @@ public final class TransactionDao_Impl implements TransactionDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `transactions` (`id`,`accountId`,`type`,`amount`,`date`,`timestamp`,`description`,`relatedBillId`,`relatedIncomeId`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `transactions` (`id`,`accountId`,`toAccountId`,`type`,`amount`,`date`,`timestamp`,`description`,`relatedBillId`,`relatedIncomeId`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -60,23 +60,28 @@ public final class TransactionDao_Impl implements TransactionDao {
           @NonNull final TransactionEntity entity) {
         statement.bindLong(1, entity.getId());
         statement.bindLong(2, entity.getAccountId());
-        final String _tmp = __converters.fromTransactionType(entity.getType());
-        statement.bindString(3, _tmp);
-        statement.bindDouble(4, entity.getAmount());
-        final String _tmp_1 = __converters.fromLocalDate(entity.getDate());
-        statement.bindString(5, _tmp_1);
-        final String _tmp_2 = __converters.fromLocalDateTime(entity.getTimestamp());
-        statement.bindString(6, _tmp_2);
-        statement.bindString(7, entity.getDescription());
-        if (entity.getRelatedBillId() == null) {
-          statement.bindNull(8);
+        if (entity.getToAccountId() == null) {
+          statement.bindNull(3);
         } else {
-          statement.bindLong(8, entity.getRelatedBillId());
+          statement.bindLong(3, entity.getToAccountId());
         }
-        if (entity.getRelatedIncomeId() == null) {
+        final String _tmp = __converters.fromTransactionType(entity.getType());
+        statement.bindString(4, _tmp);
+        statement.bindDouble(5, entity.getAmount());
+        final String _tmp_1 = __converters.fromLocalDate(entity.getDate());
+        statement.bindString(6, _tmp_1);
+        final String _tmp_2 = __converters.fromLocalDateTime(entity.getTimestamp());
+        statement.bindString(7, _tmp_2);
+        statement.bindString(8, entity.getDescription());
+        if (entity.getRelatedBillId() == null) {
           statement.bindNull(9);
         } else {
-          statement.bindLong(9, entity.getRelatedIncomeId());
+          statement.bindLong(9, entity.getRelatedBillId());
+        }
+        if (entity.getRelatedIncomeId() == null) {
+          statement.bindNull(10);
+        } else {
+          statement.bindLong(10, entity.getRelatedIncomeId());
         }
       }
     };
@@ -97,7 +102,7 @@ public final class TransactionDao_Impl implements TransactionDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `transactions` SET `id` = ?,`accountId` = ?,`type` = ?,`amount` = ?,`date` = ?,`timestamp` = ?,`description` = ?,`relatedBillId` = ?,`relatedIncomeId` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `transactions` SET `id` = ?,`accountId` = ?,`toAccountId` = ?,`type` = ?,`amount` = ?,`date` = ?,`timestamp` = ?,`description` = ?,`relatedBillId` = ?,`relatedIncomeId` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -105,25 +110,30 @@ public final class TransactionDao_Impl implements TransactionDao {
           @NonNull final TransactionEntity entity) {
         statement.bindLong(1, entity.getId());
         statement.bindLong(2, entity.getAccountId());
-        final String _tmp = __converters.fromTransactionType(entity.getType());
-        statement.bindString(3, _tmp);
-        statement.bindDouble(4, entity.getAmount());
-        final String _tmp_1 = __converters.fromLocalDate(entity.getDate());
-        statement.bindString(5, _tmp_1);
-        final String _tmp_2 = __converters.fromLocalDateTime(entity.getTimestamp());
-        statement.bindString(6, _tmp_2);
-        statement.bindString(7, entity.getDescription());
-        if (entity.getRelatedBillId() == null) {
-          statement.bindNull(8);
+        if (entity.getToAccountId() == null) {
+          statement.bindNull(3);
         } else {
-          statement.bindLong(8, entity.getRelatedBillId());
+          statement.bindLong(3, entity.getToAccountId());
         }
-        if (entity.getRelatedIncomeId() == null) {
+        final String _tmp = __converters.fromTransactionType(entity.getType());
+        statement.bindString(4, _tmp);
+        statement.bindDouble(5, entity.getAmount());
+        final String _tmp_1 = __converters.fromLocalDate(entity.getDate());
+        statement.bindString(6, _tmp_1);
+        final String _tmp_2 = __converters.fromLocalDateTime(entity.getTimestamp());
+        statement.bindString(7, _tmp_2);
+        statement.bindString(8, entity.getDescription());
+        if (entity.getRelatedBillId() == null) {
           statement.bindNull(9);
         } else {
-          statement.bindLong(9, entity.getRelatedIncomeId());
+          statement.bindLong(9, entity.getRelatedBillId());
         }
-        statement.bindLong(10, entity.getId());
+        if (entity.getRelatedIncomeId() == null) {
+          statement.bindNull(10);
+        } else {
+          statement.bindLong(10, entity.getRelatedIncomeId());
+        }
+        statement.bindLong(11, entity.getId());
       }
     };
   }
@@ -197,6 +207,7 @@ public final class TransactionDao_Impl implements TransactionDao {
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
           final int _cursorIndexOfAccountId = CursorUtil.getColumnIndexOrThrow(_cursor, "accountId");
+          final int _cursorIndexOfToAccountId = CursorUtil.getColumnIndexOrThrow(_cursor, "toAccountId");
           final int _cursorIndexOfType = CursorUtil.getColumnIndexOrThrow(_cursor, "type");
           final int _cursorIndexOfAmount = CursorUtil.getColumnIndexOrThrow(_cursor, "amount");
           final int _cursorIndexOfDate = CursorUtil.getColumnIndexOrThrow(_cursor, "date");
@@ -211,6 +222,12 @@ public final class TransactionDao_Impl implements TransactionDao {
             _tmpId = _cursor.getLong(_cursorIndexOfId);
             final long _tmpAccountId;
             _tmpAccountId = _cursor.getLong(_cursorIndexOfAccountId);
+            final Long _tmpToAccountId;
+            if (_cursor.isNull(_cursorIndexOfToAccountId)) {
+              _tmpToAccountId = null;
+            } else {
+              _tmpToAccountId = _cursor.getLong(_cursorIndexOfToAccountId);
+            }
             final TransactionType _tmpType;
             final String _tmp;
             _tmp = _cursor.getString(_cursorIndexOfType);
@@ -239,7 +256,7 @@ public final class TransactionDao_Impl implements TransactionDao {
             } else {
               _tmpRelatedIncomeId = _cursor.getLong(_cursorIndexOfRelatedIncomeId);
             }
-            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
+            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
             _result.add(_item);
           }
           return _result;
@@ -269,6 +286,7 @@ public final class TransactionDao_Impl implements TransactionDao {
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
           final int _cursorIndexOfAccountId = CursorUtil.getColumnIndexOrThrow(_cursor, "accountId");
+          final int _cursorIndexOfToAccountId = CursorUtil.getColumnIndexOrThrow(_cursor, "toAccountId");
           final int _cursorIndexOfType = CursorUtil.getColumnIndexOrThrow(_cursor, "type");
           final int _cursorIndexOfAmount = CursorUtil.getColumnIndexOrThrow(_cursor, "amount");
           final int _cursorIndexOfDate = CursorUtil.getColumnIndexOrThrow(_cursor, "date");
@@ -283,6 +301,12 @@ public final class TransactionDao_Impl implements TransactionDao {
             _tmpId = _cursor.getLong(_cursorIndexOfId);
             final long _tmpAccountId;
             _tmpAccountId = _cursor.getLong(_cursorIndexOfAccountId);
+            final Long _tmpToAccountId;
+            if (_cursor.isNull(_cursorIndexOfToAccountId)) {
+              _tmpToAccountId = null;
+            } else {
+              _tmpToAccountId = _cursor.getLong(_cursorIndexOfToAccountId);
+            }
             final TransactionType _tmpType;
             final String _tmp;
             _tmp = _cursor.getString(_cursorIndexOfType);
@@ -311,7 +335,7 @@ public final class TransactionDao_Impl implements TransactionDao {
             } else {
               _tmpRelatedIncomeId = _cursor.getLong(_cursorIndexOfRelatedIncomeId);
             }
-            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
+            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
             _result.add(_item);
           }
           return _result;
@@ -346,6 +370,7 @@ public final class TransactionDao_Impl implements TransactionDao {
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
           final int _cursorIndexOfAccountId = CursorUtil.getColumnIndexOrThrow(_cursor, "accountId");
+          final int _cursorIndexOfToAccountId = CursorUtil.getColumnIndexOrThrow(_cursor, "toAccountId");
           final int _cursorIndexOfType = CursorUtil.getColumnIndexOrThrow(_cursor, "type");
           final int _cursorIndexOfAmount = CursorUtil.getColumnIndexOrThrow(_cursor, "amount");
           final int _cursorIndexOfDate = CursorUtil.getColumnIndexOrThrow(_cursor, "date");
@@ -360,6 +385,12 @@ public final class TransactionDao_Impl implements TransactionDao {
             _tmpId = _cursor.getLong(_cursorIndexOfId);
             final long _tmpAccountId;
             _tmpAccountId = _cursor.getLong(_cursorIndexOfAccountId);
+            final Long _tmpToAccountId;
+            if (_cursor.isNull(_cursorIndexOfToAccountId)) {
+              _tmpToAccountId = null;
+            } else {
+              _tmpToAccountId = _cursor.getLong(_cursorIndexOfToAccountId);
+            }
             final TransactionType _tmpType;
             final String _tmp_2;
             _tmp_2 = _cursor.getString(_cursorIndexOfType);
@@ -388,7 +419,7 @@ public final class TransactionDao_Impl implements TransactionDao {
             } else {
               _tmpRelatedIncomeId = _cursor.getLong(_cursorIndexOfRelatedIncomeId);
             }
-            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
+            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
             _result.add(_item);
           }
           return _result;
@@ -420,6 +451,7 @@ public final class TransactionDao_Impl implements TransactionDao {
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
           final int _cursorIndexOfAccountId = CursorUtil.getColumnIndexOrThrow(_cursor, "accountId");
+          final int _cursorIndexOfToAccountId = CursorUtil.getColumnIndexOrThrow(_cursor, "toAccountId");
           final int _cursorIndexOfType = CursorUtil.getColumnIndexOrThrow(_cursor, "type");
           final int _cursorIndexOfAmount = CursorUtil.getColumnIndexOrThrow(_cursor, "amount");
           final int _cursorIndexOfDate = CursorUtil.getColumnIndexOrThrow(_cursor, "date");
@@ -433,6 +465,12 @@ public final class TransactionDao_Impl implements TransactionDao {
             _tmpId = _cursor.getLong(_cursorIndexOfId);
             final long _tmpAccountId;
             _tmpAccountId = _cursor.getLong(_cursorIndexOfAccountId);
+            final Long _tmpToAccountId;
+            if (_cursor.isNull(_cursorIndexOfToAccountId)) {
+              _tmpToAccountId = null;
+            } else {
+              _tmpToAccountId = _cursor.getLong(_cursorIndexOfToAccountId);
+            }
             final TransactionType _tmpType;
             final String _tmp;
             _tmp = _cursor.getString(_cursorIndexOfType);
@@ -461,7 +499,7 @@ public final class TransactionDao_Impl implements TransactionDao {
             } else {
               _tmpRelatedIncomeId = _cursor.getLong(_cursorIndexOfRelatedIncomeId);
             }
-            _result = new TransactionEntity(_tmpId,_tmpAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
+            _result = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
           } else {
             _result = null;
           }

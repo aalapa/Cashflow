@@ -151,6 +151,7 @@ fun TransactionDialog(
     var amount by remember { mutableStateOf(transaction?.amount?.toString() ?: "0.0") }
     var type by remember { mutableStateOf(transaction?.type ?: TransactionType.MANUAL_ADJUSTMENT) }
     var selectedAccountId by remember { mutableStateOf(transaction?.accountId ?: (accounts.firstOrNull()?.id ?: 0L)) }
+    var selectedToAccountId by remember { mutableStateOf(transaction?.toAccountId ?: (accounts.getOrNull(1)?.id)) }
     val timeZone = TimeZone.currentSystemDefault()
     val today = Clock.System.now().toLocalDateTime(timeZone).date
     val now = Clock.System.now().toLocalDateTime(timeZone)
@@ -214,7 +215,7 @@ fun TransactionDialog(
                         value = selectedAccount?.name ?: "Select Account",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Account") },
+                        label = { Text(if (type == TransactionType.TRANSFER) "From Account" else "Account") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountExpanded) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -235,6 +236,42 @@ fun TransactionDialog(
                         }
                     }
                 }
+                
+                // Show "To Account" dropdown only for TRANSFER type
+                if (type == TransactionType.TRANSFER) {
+                    var toAccountExpanded by remember { mutableStateOf(false) }
+                    val selectedToAccount = accounts.find { it.id == selectedToAccountId }
+                    ExposedDropdownMenuBox(
+                        expanded = toAccountExpanded,
+                        onExpandedChange = { toAccountExpanded = !toAccountExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedToAccount?.name ?: "Select Account",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("To Account") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = toAccountExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = toAccountExpanded,
+                            onDismissRequest = { toAccountExpanded = false }
+                        ) {
+                            accounts.forEach { account ->
+                                DropdownMenuItem(
+                                    text = { Text(account.name) },
+                                    onClick = {
+                                        selectedToAccountId = account.id
+                                        toAccountExpanded = false
+                                    },
+                                    enabled = account.id != selectedAccountId // Can't transfer to same account
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -245,6 +282,7 @@ fun TransactionDialog(
                         Transaction(
                             id = transaction?.id ?: 0L,
                             accountId = selectedAccountId,
+                            toAccountId = if (type == TransactionType.TRANSFER) selectedToAccountId else null,
                             type = type,
                             amount = amountValue,
                             date = transaction?.date ?: today,

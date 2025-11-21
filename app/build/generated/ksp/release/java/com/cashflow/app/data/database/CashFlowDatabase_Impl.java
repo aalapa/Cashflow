@@ -50,7 +50,7 @@ public final class CashFlowDatabase_Impl extends CashFlowDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(4) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(5) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `startingBalance` REAL NOT NULL, `currentBalance` REAL NOT NULL)");
@@ -59,9 +59,9 @@ public final class CashFlowDatabase_Impl extends CashFlowDatabase {
         db.execSQL("CREATE TABLE IF NOT EXISTS `bills` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `amount` REAL NOT NULL, `recurrenceType` TEXT NOT NULL, `startDate` TEXT NOT NULL, `endDate` TEXT, `accountId` INTEGER, `isActive` INTEGER NOT NULL, `reminderDaysBefore` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `bill_overrides` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `billId` INTEGER NOT NULL, `date` TEXT NOT NULL, `amount` REAL NOT NULL, FOREIGN KEY(`billId`) REFERENCES `bills`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
         db.execSQL("CREATE TABLE IF NOT EXISTS `bill_payments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `billId` INTEGER NOT NULL, `accountId` INTEGER NOT NULL, `paymentDate` TEXT NOT NULL, `amount` REAL NOT NULL, `timestamp` TEXT NOT NULL, `transactionId` INTEGER, FOREIGN KEY(`billId`) REFERENCES `bills`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`accountId`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `accountId` INTEGER NOT NULL, `type` TEXT NOT NULL, `amount` REAL NOT NULL, `date` TEXT NOT NULL, `timestamp` TEXT NOT NULL, `description` TEXT NOT NULL, `relatedBillId` INTEGER, `relatedIncomeId` INTEGER, FOREIGN KEY(`accountId`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `accountId` INTEGER NOT NULL, `toAccountId` INTEGER, `type` TEXT NOT NULL, `amount` REAL NOT NULL, `date` TEXT NOT NULL, `timestamp` TEXT NOT NULL, `description` TEXT NOT NULL, `relatedBillId` INTEGER, `relatedIncomeId` INTEGER, FOREIGN KEY(`accountId`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`toAccountId`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '108bf684cde07262d4210258cb116768')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a4d9ea44b432e825e743c1acaa7102db')");
       }
 
       @Override
@@ -217,9 +217,10 @@ public final class CashFlowDatabase_Impl extends CashFlowDatabase {
                   + " Expected:\n" + _infoBillPayments + "\n"
                   + " Found:\n" + _existingBillPayments);
         }
-        final HashMap<String, TableInfo.Column> _columnsTransactions = new HashMap<String, TableInfo.Column>(9);
+        final HashMap<String, TableInfo.Column> _columnsTransactions = new HashMap<String, TableInfo.Column>(10);
         _columnsTransactions.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTransactions.put("accountId", new TableInfo.Column("accountId", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTransactions.put("toAccountId", new TableInfo.Column("toAccountId", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTransactions.put("type", new TableInfo.Column("type", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTransactions.put("amount", new TableInfo.Column("amount", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTransactions.put("date", new TableInfo.Column("date", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -227,8 +228,9 @@ public final class CashFlowDatabase_Impl extends CashFlowDatabase {
         _columnsTransactions.put("description", new TableInfo.Column("description", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTransactions.put("relatedBillId", new TableInfo.Column("relatedBillId", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTransactions.put("relatedIncomeId", new TableInfo.Column("relatedIncomeId", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
-        final HashSet<TableInfo.ForeignKey> _foreignKeysTransactions = new HashSet<TableInfo.ForeignKey>(1);
+        final HashSet<TableInfo.ForeignKey> _foreignKeysTransactions = new HashSet<TableInfo.ForeignKey>(2);
         _foreignKeysTransactions.add(new TableInfo.ForeignKey("accounts", "CASCADE", "NO ACTION", Arrays.asList("accountId"), Arrays.asList("id")));
+        _foreignKeysTransactions.add(new TableInfo.ForeignKey("accounts", "CASCADE", "NO ACTION", Arrays.asList("toAccountId"), Arrays.asList("id")));
         final HashSet<TableInfo.Index> _indicesTransactions = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoTransactions = new TableInfo("transactions", _columnsTransactions, _foreignKeysTransactions, _indicesTransactions);
         final TableInfo _existingTransactions = TableInfo.read(db, "transactions");
@@ -239,7 +241,7 @@ public final class CashFlowDatabase_Impl extends CashFlowDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "108bf684cde07262d4210258cb116768", "393e5f94dc4c232d04f1c40611c7a53f");
+    }, "a4d9ea44b432e825e743c1acaa7102db", "0c8d0c56ef6a5e14d834c2f275540357");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

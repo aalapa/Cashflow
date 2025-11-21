@@ -48,9 +48,13 @@ interface CashFlowRepository {
     fun getAllTransactions(): Flow<List<Transaction>>
     fun getTransactionsForAccount(accountId: Long): Flow<List<Transaction>>
     fun getTransactionsBetween(startDate: LocalDate, endDate: LocalDate): Flow<List<Transaction>>
+    suspend fun getTransactionById(id: Long): Transaction?
     suspend fun insertTransaction(transaction: Transaction): Long
     suspend fun updateTransaction(transaction: Transaction)
     suspend fun deleteTransaction(transaction: Transaction)
+    
+    // Data Management
+    suspend fun clearAllData()
 
     // Cash Flow Calculation
     suspend fun calculateCashFlow(

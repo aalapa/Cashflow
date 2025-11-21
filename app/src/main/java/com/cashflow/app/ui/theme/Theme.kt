@@ -61,10 +61,10 @@ fun CashFlowTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = androidx.compose.material3.Typography(),
-        content = content
-    )
+      MaterialTheme(
+          colorScheme = colorScheme,
+          typography = CompactTypography,
+          content = content
+      )
 }
 

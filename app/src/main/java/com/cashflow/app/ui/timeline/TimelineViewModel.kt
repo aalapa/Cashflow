@@ -22,15 +22,17 @@ class TimelineViewModel(
     private val accountsFlow = repository.getAllAccounts()
     private val incomeFlow = repository.getAllActiveIncome()
     private val billsFlow = repository.getAllActiveBills()
+    private val transactionsFlow = repository.getAllTransactions()
 
     init {
-        // Watch for changes in accounts, income, or bills - combine all flows
+        // Watch for changes in accounts, income, bills, or transactions - combine all flows
         viewModelScope.launch {
             combine(
                 accountsFlow,
                 incomeFlow,
-                billsFlow
-            ) { accounts, _, _ ->
+                billsFlow,
+                transactionsFlow
+            ) { accounts, _, _, _ ->
                 accounts
             }.collect { accounts ->
                 val currentState = _state.value
@@ -148,6 +150,18 @@ class TimelineViewModel(
         _state.update { it.copy(isLoading = true, error = null) }
 
         try {
+            // Handle empty accounts gracefully
+            if (accounts.isEmpty()) {
+                _state.update {
+                    it.copy(
+                        cashFlowDays = emptyList(),
+                        isLoading = false,
+                        error = null
+                    )
+                }
+                return
+            }
+            
             val timeZone = TimeZone.currentSystemDefault()
             val today = Clock.System.now().toLocalDateTime(timeZone).date
             val (startDate, endDate) = when (currentState.selectedTimePeriod) {

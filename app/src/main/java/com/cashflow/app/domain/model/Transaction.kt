@@ -6,7 +6,8 @@ import kotlinx.datetime.LocalDateTime
 
 data class Transaction(
     val id: Long = 0,
-    val accountId: Long,
+    val accountId: Long, // Source account (from)
+    val toAccountId: Long? = null, // Destination account (to) - only for TRANSFER type
     val type: TransactionType,
     val amount: Double,
     val date: LocalDate,

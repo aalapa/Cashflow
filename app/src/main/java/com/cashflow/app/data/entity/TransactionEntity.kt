@@ -15,13 +15,20 @@ import kotlinx.datetime.LocalDateTime
             parentColumns = ["id"],
             childColumns = ["accountId"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = AccountEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["toAccountId"],
+            onDelete = ForeignKey.CASCADE
         )
     ]
 )
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val accountId: Long,
+    val accountId: Long, // Source account (from)
+    val toAccountId: Long? = null, // Destination account (to) - only for TRANSFER type
     val type: TransactionType,
     val amount: Double,
     val date: LocalDate,

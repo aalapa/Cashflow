@@ -1,6 +1,7 @@
 package com.cashflow.app.data.repository
 
 import com.cashflow.app.data.dao.*
+import com.cashflow.app.data.database.CashFlowDatabase
 import com.cashflow.app.data.entity.*
 import com.cashflow.app.data.model.RecurrenceType
 import com.cashflow.app.domain.model.*
@@ -15,7 +16,8 @@ class CashFlowRepositoryImpl(
     private val incomeDao: IncomeDao,
     private val billDao: BillDao,
     private val billPaymentDao: BillPaymentDao,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val database: CashFlowDatabase
 ) : CashFlowRepository {
 
     override fun getAllAccounts(): Flow<List<Account>> =
@@ -241,19 +243,44 @@ class CashFlowRepositoryImpl(
             entities.map { it.toDomain() }
         }
 
+    override suspend fun getTransactionById(id: Long): Transaction? {
+        return transactionDao.getTransactionById(id)?.toDomain()
+    }
+    
     override suspend fun insertTransaction(transaction: Transaction): Long {
         val transactionId = transactionDao.insertTransaction(transaction.toEntity())
         
-        // Update account balance based on transaction type
-        val account = accountDao.getAccountById(transaction.accountId)
-        account?.let {
-            val balanceChange = when (transaction.type) {
-                com.cashflow.app.data.model.TransactionType.INCOME -> transaction.amount
-                com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
-                com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> -transaction.amount
-                com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> transaction.amount // Can be positive or negative
+        // Update account balance(s) based on transaction type
+        when (transaction.type) {
+            com.cashflow.app.data.model.TransactionType.TRANSFER -> {
+                // Transfer: deduct from source account, add to destination account
+                if (transaction.toAccountId != null) {
+                    // Deduct from source
+                    val fromAccount = accountDao.getAccountById(transaction.accountId)
+                    fromAccount?.let {
+                        accountDao.updateAccount(it.copy(currentBalance = it.currentBalance - transaction.amount))
+                    }
+                    // Add to destination
+                    val toAccount = accountDao.getAccountById(transaction.toAccountId)
+                    toAccount?.let {
+                        accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + transaction.amount))
+                    }
+                }
             }
-            accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + balanceChange))
+            else -> {
+                // Other transaction types: only affect source account
+                val account = accountDao.getAccountById(transaction.accountId)
+                account?.let {
+                    val balanceChange = when (transaction.type) {
+                        com.cashflow.app.data.model.TransactionType.INCOME -> transaction.amount
+                        com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
+                        com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> -transaction.amount
+                        com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> transaction.amount
+                        else -> 0.0
+                    }
+                    accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + balanceChange))
+                }
+            }
         }
         
         return transactionId
@@ -270,39 +297,74 @@ class CashFlowRepositoryImpl(
         // Adjust account balances
         if (oldTransaction != null) {
             // Reverse the effect of the old transaction
-            val oldAccount = accountDao.getAccountById(oldTransaction.accountId)
-            oldAccount?.let {
-                val oldBalanceChange = when (oldTransaction.type) {
-                    com.cashflow.app.data.model.TransactionType.INCOME -> -oldTransaction.amount // Reverse: subtract
-                    com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
-                    com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> oldTransaction.amount // Reverse: add back
-                    com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> -oldTransaction.amount // Reverse: subtract
-                }
-                accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + oldBalanceChange))
-            }
+            reverseTransactionEffect(oldTransaction)
             
             // Apply the effect of the new transaction
-            val newAccount = accountDao.getAccountById(transaction.accountId)
-            newAccount?.let {
-                val newBalanceChange = when (transaction.type) {
-                    com.cashflow.app.data.model.TransactionType.INCOME -> transaction.amount
-                    com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
-                    com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> -transaction.amount
-                    com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> transaction.amount
-                }
-                accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + newBalanceChange))
-            }
+            applyTransactionEffect(transaction)
         } else {
-            // If old transaction not found, just apply the new one (shouldn't happen, but handle gracefully)
-            val account = accountDao.getAccountById(transaction.accountId)
-            account?.let {
-                val balanceChange = when (transaction.type) {
-                    com.cashflow.app.data.model.TransactionType.INCOME -> transaction.amount
-                    com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
-                    com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> -transaction.amount
-                    com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> transaction.amount
+            // If old transaction not found, just apply the new one
+            applyTransactionEffect(transaction)
+        }
+    }
+    
+    private suspend fun reverseTransactionEffect(transaction: Transaction) {
+        when (transaction.type) {
+            com.cashflow.app.data.model.TransactionType.TRANSFER -> {
+                if (transaction.toAccountId != null) {
+                    // Reverse transfer: add back to source, subtract from destination
+                    val fromAccount = accountDao.getAccountById(transaction.accountId)
+                    fromAccount?.let {
+                        accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + transaction.amount))
+                    }
+                    val toAccount = accountDao.getAccountById(transaction.toAccountId)
+                    toAccount?.let {
+                        accountDao.updateAccount(it.copy(currentBalance = it.currentBalance - transaction.amount))
+                    }
                 }
-                accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + balanceChange))
+            }
+            else -> {
+                val account = accountDao.getAccountById(transaction.accountId)
+                account?.let {
+                    val balanceChange = when (transaction.type) {
+                        com.cashflow.app.data.model.TransactionType.INCOME -> -transaction.amount
+                        com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
+                        com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> transaction.amount
+                        com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> -transaction.amount
+                        else -> 0.0
+                    }
+                    accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + balanceChange))
+                }
+            }
+        }
+    }
+    
+    private suspend fun applyTransactionEffect(transaction: Transaction) {
+        when (transaction.type) {
+            com.cashflow.app.data.model.TransactionType.TRANSFER -> {
+                if (transaction.toAccountId != null) {
+                    // Transfer: deduct from source, add to destination
+                    val fromAccount = accountDao.getAccountById(transaction.accountId)
+                    fromAccount?.let {
+                        accountDao.updateAccount(it.copy(currentBalance = it.currentBalance - transaction.amount))
+                    }
+                    val toAccount = accountDao.getAccountById(transaction.toAccountId)
+                    toAccount?.let {
+                        accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + transaction.amount))
+                    }
+                }
+            }
+            else -> {
+                val account = accountDao.getAccountById(transaction.accountId)
+                account?.let {
+                    val balanceChange = when (transaction.type) {
+                        com.cashflow.app.data.model.TransactionType.INCOME -> transaction.amount
+                        com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
+                        com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> -transaction.amount
+                        com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> transaction.amount
+                        else -> 0.0
+                    }
+                    accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + balanceChange))
+                }
             }
         }
     }
@@ -315,17 +377,14 @@ class CashFlowRepositoryImpl(
         // Delete the transaction
         transactionDao.deleteTransaction(transaction.toEntity())
         
-        // Reverse the effect on account balance
-        val account = accountDao.getAccountById(transactionToDelete.accountId)
-        account?.let {
-            val balanceChange = when (transactionToDelete.type) {
-                com.cashflow.app.data.model.TransactionType.INCOME -> -transactionToDelete.amount // Reverse: subtract
-                com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
-                com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> transactionToDelete.amount // Reverse: add back
-                com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> -transactionToDelete.amount // Reverse: subtract
-            }
-            accountDao.updateAccount(it.copy(currentBalance = it.currentBalance + balanceChange))
-        }
+        // Reverse the transaction's effect on account balance(s)
+        reverseTransactionEffect(transactionToDelete)
+    }
+    
+    override suspend fun clearAllData() {
+        // Clear all data from all tables
+        // Room will handle cascade deletions based on foreign key relationships
+        database.clearAllTables()
     }
 
     override suspend fun calculateCashFlow(
@@ -352,8 +411,23 @@ class CashFlowRepositoryImpl(
             overrides.associate { it.date to it.amount }
         }
 
-        // Calculate starting balance (sum of all account balances)
+        // Calculate starting balance: use current account balances, but EXCLUDE
+        // transactions in our date range (since we'll process them below)
         var currentBalance = accounts.sumOf { it.currentBalance }
+        
+        // Subtract transactions in our date range from the starting balance
+        // since they're already included in currentBalance but we'll add them back below
+        for (transaction in transactionList) {
+            if (transaction.date >= startDate) {
+                when (transaction.type) {
+                    com.cashflow.app.data.model.TransactionType.INCOME -> currentBalance -= transaction.amount
+                    com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
+                    com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> currentBalance += transaction.amount
+                    com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> currentBalance -= transaction.amount
+                    com.cashflow.app.data.model.TransactionType.TRANSFER -> { /* No change to total */ }
+                }
+            }
+        }
 
         val cashFlowDays = mutableListOf<CashFlowDay>()
         var currentDate = startDate
@@ -373,10 +447,12 @@ class CashFlowRepositoryImpl(
                         it.date == currentDate 
                     }
                     if (!isReceived) {
+                        // Only add to projected income and balance if not yet received
                         val amount = incomeOverrides[income]?.get(currentDate) ?: income.amount
                         dayIncome.add(IncomeEvent(income.id, income.name, amount, income.accountId))
                         currentBalance += amount
                     }
+                    // If received, it will show up in transactions instead, so don't add to dayIncome
                 }
             }
 
@@ -405,6 +481,10 @@ class CashFlowRepositoryImpl(
                             // Manual adjustments can be positive or negative
                             // For simplicity, we'll treat amount as the change
                             currentBalance += transaction.amount
+                        }
+                        com.cashflow.app.data.model.TransactionType.TRANSFER -> {
+                            // Transfers don't affect total cash balance (just move money between accounts)
+                            // No change to currentBalance
                         }
                     }
                 }
@@ -462,11 +542,11 @@ class CashFlowRepositoryImpl(
     private fun Bill.toEntity() = BillEntity(id, name, amount, recurrenceType, startDate, endDate, null, isActive, reminderDaysBefore)
 
     private fun TransactionEntity.toDomain() = Transaction(
-        id, accountId, type, amount, date, timestamp, description, relatedBillId, relatedIncomeId
+        id, accountId, toAccountId, type, amount, date, timestamp, description, relatedBillId, relatedIncomeId
     )
 
     private fun Transaction.toEntity() = TransactionEntity(
-        id, accountId, type, amount, date, timestamp, description, relatedBillId, relatedIncomeId
+        id, accountId, toAccountId, type, amount, date, timestamp, description, relatedBillId, relatedIncomeId
     )
 
     private fun BillPaymentEntity.toDomain() = BillPayment(

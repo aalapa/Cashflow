@@ -24,10 +24,12 @@ import com.cashflow.app.ui.accounts.AccountsScreen
 import com.cashflow.app.ui.bills.BillsScreen
 import com.cashflow.app.ui.income.IncomeScreen
 import com.cashflow.app.ui.analyze.AnalyzeScreen
+import com.cashflow.app.ui.reset.ResetDataDialog
 import com.cashflow.app.ui.settings.SettingsScreen
 import com.cashflow.app.ui.settings.SettingsViewModel
 import com.cashflow.app.ui.timeline.TimelineScreen
 import com.cashflow.app.ui.transactions.TransactionsScreen
+import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Timeline : Screen("timeline", "Timeline", Icons.Default.DateRange)
@@ -60,11 +62,21 @@ fun CashFlowNavigation(
     val initialDarkTheme = prefs.getBoolean("dark_theme", false)
 
     var showMenu by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val navBackStackEntry = navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry.value?.destination?.route
+    val currentScreen = screens.find { it.route == currentRoute }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = { 
+                    Text(
+                        text = currentScreen?.title ?: "Cash Flow",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 actions = {
                     IconButton(onClick = { showMenu = !showMenu }) {
                         Icon(
@@ -94,6 +106,17 @@ fun CashFlowNavigation(
                             },
                             leadingIcon = {
                                 Icon(Icons.Default.Settings, contentDescription = null)
+                            }
+                        )
+                        Divider()
+                        DropdownMenuItem(
+                            text = { Text("Reset All Data") },
+                            onClick = {
+                                showMenu = false
+                                showResetDialog = true
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.DeleteForever, contentDescription = null)
                             }
                         )
                     }
@@ -161,6 +184,32 @@ fun CashFlowNavigation(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
+        }
+        
+        // Reset Data Dialog
+        if (showResetDialog) {
+            ResetDataDialog(
+                onConfirm = {
+                    scope.launch {
+                        try {
+                            repository.clearAllData()
+                            showResetDialog = false
+                            // Navigate back to timeline
+                            navController.navigate(Screen.Timeline.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = false
+                                }
+                                launchSingleTop = true
+                                restoreState = false
+                            }
+                        } catch (e: Exception) {
+                            // Handle error gracefully
+                            showResetDialog = false
+                        }
+                    }
+                },
+                onDismiss = { showResetDialog = false }
+            )
         }
     }
 }

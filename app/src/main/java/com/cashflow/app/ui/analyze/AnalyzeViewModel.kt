@@ -198,7 +198,21 @@ class AnalyzeViewModel(
         val income = repository.getAllActiveIncome().first()
         val transactions = repository.getTransactionsBetween(startDate, endDate).first()
         
+        // Start with current balance but subtract transactions in our date range
+        // (they're already included in current balance but we'll add them back below)
         var currentBalance = accounts.sumOf { it.currentBalance }
+        for (transaction in transactions) {
+            if (transaction.date >= startDate) {
+                when (transaction.type) {
+                    com.cashflow.app.data.model.TransactionType.INCOME -> currentBalance -= transaction.amount
+                    com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
+                    com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> currentBalance += transaction.amount
+                    com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> currentBalance -= transaction.amount
+                    com.cashflow.app.data.model.TransactionType.TRANSFER -> { /* No change */ }
+                }
+            }
+        }
+        
         val cashFlowDays = mutableListOf<com.cashflow.app.domain.model.CashFlowDay>()
         
         var currentDate = startDate
@@ -213,6 +227,10 @@ class AnalyzeViewModel(
                     com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
                     com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> dayBalance -= transaction.amount
                     com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> dayBalance += transaction.amount
+                    com.cashflow.app.data.model.TransactionType.TRANSFER -> {
+                        // Transfers don't affect total cash balance (just move money between accounts)
+                        // No change to dayBalance
+                    }
                 }
             }
             

@@ -35,18 +35,10 @@ fun TimelineScreen(repository: CashFlowRepository) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
-            // Header
-            Text(
-                text = "Cash Flow Timeline",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
             // Time Period Selector
             TimePeriodSelector(
                 selectedPeriod = state.selectedTimePeriod,
@@ -55,7 +47,7 @@ fun TimelineScreen(repository: CashFlowRepository) {
                 }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         if (state.isLoading) {
@@ -73,6 +65,22 @@ fun TimelineScreen(repository: CashFlowRepository) {
                     text = "Error: ${state.error}",
                     color = MaterialTheme.colorScheme.error
                 )
+            }
+        } else if (state.cashFlowDays.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No accounts or data yet.\nAdd an account to get started!",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
             }
         } else {
             // Chart View as Accordion
