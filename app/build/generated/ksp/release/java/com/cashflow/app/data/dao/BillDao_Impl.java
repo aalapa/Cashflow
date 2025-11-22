@@ -9,6 +9,7 @@ import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
+import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
 import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
@@ -49,6 +50,10 @@ public final class BillDao_Impl implements BillDao {
   private final EntityDeletionOrUpdateAdapter<BillOverrideEntity> __deletionAdapterOfBillOverrideEntity;
 
   private final EntityDeletionOrUpdateAdapter<BillEntity> __updateAdapterOfBillEntity;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteAllBills;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteAllOverrides;
 
   public BillDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -172,6 +177,22 @@ public final class BillDao_Impl implements BillDao {
         statement.bindLong(10, entity.getId());
       }
     };
+    this.__preparedStmtOfDeleteAllBills = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM bills";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfDeleteAllOverrides = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM bill_overrides";
+        return _query;
+      }
+    };
   }
 
   @Override
@@ -261,6 +282,52 @@ public final class BillDao_Impl implements BillDao {
           return Unit.INSTANCE;
         } finally {
           __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteAllBills(final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteAllBills.acquire();
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteAllBills.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteAllOverrides(final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteAllOverrides.acquire();
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteAllOverrides.release(_stmt);
         }
       }
     }, $completion);

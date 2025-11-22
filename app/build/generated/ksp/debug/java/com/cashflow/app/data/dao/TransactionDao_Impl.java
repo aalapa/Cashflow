@@ -9,6 +9,7 @@ import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
+import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
 import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
@@ -45,6 +46,8 @@ public final class TransactionDao_Impl implements TransactionDao {
   private final EntityDeletionOrUpdateAdapter<TransactionEntity> __deletionAdapterOfTransactionEntity;
 
   private final EntityDeletionOrUpdateAdapter<TransactionEntity> __updateAdapterOfTransactionEntity;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteAllTransactions;
 
   public TransactionDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -136,6 +139,14 @@ public final class TransactionDao_Impl implements TransactionDao {
         statement.bindLong(11, entity.getId());
       }
     };
+    this.__preparedStmtOfDeleteAllTransactions = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM transactions";
+        return _query;
+      }
+    };
   }
 
   @Override
@@ -190,6 +201,29 @@ public final class TransactionDao_Impl implements TransactionDao {
           return Unit.INSTANCE;
         } finally {
           __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteAllTransactions(final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteAllTransactions.acquire();
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteAllTransactions.release(_stmt);
         }
       }
     }, $completion);

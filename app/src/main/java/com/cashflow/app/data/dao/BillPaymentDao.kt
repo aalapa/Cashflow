@@ -21,5 +21,8 @@ interface BillPaymentDao {
 
     @Delete
     suspend fun deletePayment(payment: BillPaymentEntity)
+    
+    @Query("DELETE FROM bill_payments")
+    suspend fun deleteAllPayments()
 }
 

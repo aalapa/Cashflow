@@ -173,7 +173,8 @@ fun CashFlowNavigation(
                 SettingsScreen(
                     viewModel = SettingsViewModel(
                         initialDarkTheme = initialDarkTheme,
-                        onThemeChanged = onThemeChanged
+                        onThemeChanged = onThemeChanged,
+                        repository = repository
                     ),
                     onNavigateBack = { navController.popBackStack() }
                 )

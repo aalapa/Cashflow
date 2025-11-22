@@ -55,6 +55,8 @@ interface CashFlowRepository {
     
     // Data Management
     suspend fun clearAllData()
+    suspend fun exportData(): String
+    suspend fun importData(jsonData: String): Result<Unit>
 
     // Cash Flow Calculation
     suspend fun calculateCashFlow(

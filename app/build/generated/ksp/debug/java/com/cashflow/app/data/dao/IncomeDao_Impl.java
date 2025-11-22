@@ -9,6 +9,7 @@ import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
+import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
 import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
@@ -49,6 +50,10 @@ public final class IncomeDao_Impl implements IncomeDao {
   private final EntityDeletionOrUpdateAdapter<IncomeOverrideEntity> __deletionAdapterOfIncomeOverrideEntity;
 
   private final EntityDeletionOrUpdateAdapter<IncomeEntity> __updateAdapterOfIncomeEntity;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteAllIncome;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteAllOverrides;
 
   public IncomeDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -138,6 +143,22 @@ public final class IncomeDao_Impl implements IncomeDao {
         final int _tmp_2 = entity.isActive() ? 1 : 0;
         statement.bindLong(7, _tmp_2);
         statement.bindLong(8, entity.getId());
+      }
+    };
+    this.__preparedStmtOfDeleteAllIncome = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM income";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfDeleteAllOverrides = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM income_overrides";
+        return _query;
       }
     };
   }
@@ -232,6 +253,52 @@ public final class IncomeDao_Impl implements IncomeDao {
           return Unit.INSTANCE;
         } finally {
           __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteAllIncome(final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteAllIncome.acquire();
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteAllIncome.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteAllOverrides(final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteAllOverrides.acquire();
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteAllOverrides.release(_stmt);
         }
       }
     }, $completion);

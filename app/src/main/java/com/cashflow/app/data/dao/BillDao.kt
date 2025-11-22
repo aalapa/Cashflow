@@ -38,5 +38,11 @@ interface BillDao {
 
     @Delete
     suspend fun deleteOverride(override: BillOverrideEntity)
+    
+    @Query("DELETE FROM bills")
+    suspend fun deleteAllBills()
+    
+    @Query("DELETE FROM bill_overrides")
+    suspend fun deleteAllOverrides()
 }
 

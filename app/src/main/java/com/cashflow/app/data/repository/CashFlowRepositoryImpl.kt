@@ -3,12 +3,14 @@ package com.cashflow.app.data.repository
 import com.cashflow.app.data.dao.*
 import com.cashflow.app.data.database.CashFlowDatabase
 import com.cashflow.app.data.entity.*
-import com.cashflow.app.data.model.RecurrenceType
+import com.cashflow.app.data.model.*
 import com.cashflow.app.domain.model.*
 import com.cashflow.app.domain.repository.CashFlowRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
 
 class CashFlowRepositoryImpl(
@@ -381,10 +383,123 @@ class CashFlowRepositoryImpl(
         reverseTransactionEffect(transactionToDelete)
     }
     
-    override suspend fun clearAllData() {
-        // Clear all data from all tables
-        // Room will handle cascade deletions based on foreign key relationships
-        database.clearAllTables()
+    override suspend fun clearAllData() = withContext(Dispatchers.IO) {
+        // Clear all data from all tables in proper order (respecting foreign keys)
+        billPaymentDao.deleteAllPayments()
+        transactionDao.deleteAllTransactions()
+        billDao.deleteAllOverrides()
+        billDao.deleteAllBills()
+        incomeDao.deleteAllOverrides()
+        incomeDao.deleteAllIncome()
+        accountDao.deleteAllAccounts()
+    }
+    
+    override suspend fun exportData(): String = withContext(Dispatchers.IO) {
+        val accounts = accountDao.getAllAccounts().first()
+        val income = incomeDao.getAllActiveIncome().first()
+        val bills = billDao.getAllActiveBills().first()
+        val transactions = transactionDao.getAllTransactions().first()
+        
+        // Get all overrides
+        val incomeOverrides = mutableListOf<com.cashflow.app.data.entity.IncomeOverrideEntity>()
+        income.forEach { inc ->
+            incomeOverrides.addAll(incomeDao.getOverridesForIncome(inc.id).first())
+        }
+        
+        val billOverrides = mutableListOf<com.cashflow.app.data.entity.BillOverrideEntity>()
+        bills.forEach { bill ->
+            billOverrides.addAll(billDao.getOverridesForBill(bill.id).first())
+        }
+        
+        // Get all bill payments
+        val billPayments = mutableListOf<com.cashflow.app.data.entity.BillPaymentEntity>()
+        bills.forEach { bill ->
+            billPayments.addAll(billPaymentDao.getPaymentsForBill(bill.id).first())
+        }
+        
+        val exportData = com.cashflow.app.data.model.ExportData(
+            version = 1,
+            exportDate = Clock.System.now().toString(),
+            accounts = accounts.map { it.toSerializable() },
+            income = income.map { it.toSerializable() },
+            incomeOverrides = incomeOverrides.map { it.toSerializable() },
+            bills = bills.map { it.toSerializable() },
+            billOverrides = billOverrides.map { it.toSerializable() },
+            billPayments = billPayments.map { it.toSerializable() },
+            transactions = transactions.map { it.toSerializable() }
+        )
+        
+        val json = kotlinx.serialization.json.Json {
+            prettyPrint = true
+            ignoreUnknownKeys = true
+        }
+        return@withContext json.encodeToString(
+            com.cashflow.app.data.model.ExportData.serializer(),
+            exportData
+        )
+    }
+    
+    override suspend fun importData(jsonData: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val json = kotlinx.serialization.json.Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                }
+                val exportData = json.decodeFromString(
+                    com.cashflow.app.data.model.ExportData.serializer(),
+                    jsonData
+                )
+                
+                // Clear existing data first (in proper order)
+                billPaymentDao.deleteAllPayments()
+                transactionDao.deleteAllTransactions()
+                billDao.deleteAllOverrides()
+                billDao.deleteAllBills()
+                incomeDao.deleteAllOverrides()
+                incomeDao.deleteAllIncome()
+                accountDao.deleteAllAccounts()
+                
+                // Import accounts first (they're referenced by other entities)
+                exportData.accounts.forEach { serializableAccount ->
+                    accountDao.insertAccount(serializableAccount.toEntity())
+                }
+                
+                // Import income
+                exportData.income.forEach { serializableIncome ->
+                    incomeDao.insertIncome(serializableIncome.toEntity())
+                }
+                
+                // Import income overrides
+                exportData.incomeOverrides.forEach { override ->
+                    incomeDao.insertOverride(override.toEntity())
+                }
+                
+                // Import bills
+                exportData.bills.forEach { serializableBill ->
+                    billDao.insertBill(serializableBill.toEntity())
+                }
+                
+                // Import bill overrides
+                exportData.billOverrides.forEach { override ->
+                    billDao.insertOverride(override.toEntity())
+                }
+                
+                // Import transactions
+                exportData.transactions.forEach { serializableTransaction ->
+                    transactionDao.insertTransaction(serializableTransaction.toEntity())
+                }
+                
+                // Import bill payments
+                exportData.billPayments.forEach { payment ->
+                    billPaymentDao.insertPayment(payment.toEntity())
+                }
+                
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
     }
 
     override suspend fun calculateCashFlow(

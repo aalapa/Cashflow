@@ -38,5 +38,11 @@ interface IncomeDao {
 
     @Delete
     suspend fun deleteOverride(override: IncomeOverrideEntity)
+    
+    @Query("DELETE FROM income")
+    suspend fun deleteAllIncome()
+    
+    @Query("DELETE FROM income_overrides")
+    suspend fun deleteAllOverrides()
 }
 
