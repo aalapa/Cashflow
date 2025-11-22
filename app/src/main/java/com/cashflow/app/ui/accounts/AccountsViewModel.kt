@@ -62,6 +62,33 @@ class AccountsViewModel(
                     }
                 }
             }
+            is AccountsIntent.ShowAccountDetail -> {
+                viewModelScope.launch {
+                    try {
+                        repository.getTransactionsForAccount(intent.account.id)
+                            .collect { transactions ->
+                                _state.update {
+                                    it.copy(
+                                        selectedAccount = intent.account,
+                                        accountTransactions = transactions,
+                                        showAccountDetail = true
+                                    )
+                                }
+                            }
+                    } catch (e: Exception) {
+                        _state.update { it.copy(error = e.message) }
+                    }
+                }
+            }
+            is AccountsIntent.HideAccountDetail -> {
+                _state.update {
+                    it.copy(
+                        selectedAccount = null,
+                        accountTransactions = emptyList(),
+                        showAccountDetail = false
+                    )
+                }
+            }
         }
     }
 }

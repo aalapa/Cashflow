@@ -1,5 +1,6 @@
 package com.cashflow.app.ui.accounts
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -47,10 +49,14 @@ fun AccountsScreen(repository: CashFlowRepository) {
             )
             FloatingActionButton(
                 onClick = { viewModel.handleIntent(AccountsIntent.ShowAddDialog) },
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(48.dp),
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Account")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Add Account",
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 
@@ -71,6 +77,7 @@ fun AccountsScreen(repository: CashFlowRepository) {
                 items(state.accounts) { account ->
                     AccountItem(
                         account = account,
+                        onClick = { viewModel.handleIntent(AccountsIntent.ShowAccountDetail(account)) },
                         onEdit = { viewModel.handleIntent(AccountsIntent.EditAccount(account)) },
                         onDelete = { viewModel.handleIntent(AccountsIntent.DeleteAccount(account)) }
                     )
@@ -87,17 +94,29 @@ fun AccountsScreen(repository: CashFlowRepository) {
                 }
             )
         }
+        
+        val selectedAccount = state.selectedAccount
+        if (state.showAccountDetail && selectedAccount != null) {
+            AccountDetailDialog(
+                account = selectedAccount,
+                transactions = state.accountTransactions,
+                onDismiss = { viewModel.handleIntent(AccountsIntent.HideAccountDetail) }
+            )
+        }
     }
 }
 
 @Composable
 fun AccountItem(
     account: Account,
+    onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -238,5 +257,208 @@ fun AccountDialog(
             }
         }
     )
+}
+
+@Composable
+fun AccountDetailDialog(
+    account: Account,
+    transactions: List<com.cashflow.app.domain.model.Transaction>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text(
+                    text = account.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = account.type.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Account Balance
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Current Balance",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = formatCurrency(account.currentBalance),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Transaction History Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Transaction History",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${transactions.size} total",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Transactions List
+                if (transactions.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.History,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                            Text(
+                                text = "No transactions yet",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.heightIn(max = 400.dp)
+                    ) {
+                        items(transactions.size) { index ->
+                            val transaction = transactions[index]
+                            TransactionItemCompact(transaction = transaction)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
+fun TransactionItemCompact(transaction: com.cashflow.app.domain.model.Transaction) {
+    val isIncome = transaction.type == com.cashflow.app.data.model.TransactionType.INCOME
+    val isTransferIn = transaction.type == com.cashflow.app.data.model.TransactionType.TRANSFER && transaction.toAccountId != null
+    val isPositive = isIncome || isTransferIn
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = transaction.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = formatDate(transaction.date),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = transaction.type.name.replace("_", " ").lowercase()
+                            .replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text(
+                text = "${if (isPositive) "+" else "-"}${formatCurrency(transaction.amount)}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isPositive) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+fun formatCurrency(amount: Double): String {
+    return String.format("$%.2f", amount)
+}
+
+fun formatDate(date: kotlinx.datetime.LocalDate): String {
+    val monthName = when (date.monthNumber) {
+        1 -> "Jan"
+        2 -> "Feb"
+        3 -> "Mar"
+        4 -> "Apr"
+        5 -> "May"
+        6 -> "Jun"
+        7 -> "Jul"
+        8 -> "Aug"
+        9 -> "Sep"
+        10 -> "Oct"
+        11 -> "Nov"
+        12 -> "Dec"
+        else -> ""
+    }
+    return "$monthName ${date.dayOfMonth}, ${date.year}"
 }
 

@@ -60,10 +60,14 @@ fun IncomeScreen(repository: CashFlowRepository) {
             )
             FloatingActionButton(
                 onClick = { viewModel.handleIntent(IncomeIntent.ShowAddDialog) },
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(48.dp),
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Income")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Add Income",
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 
