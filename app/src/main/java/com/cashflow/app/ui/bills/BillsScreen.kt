@@ -1,13 +1,18 @@
 package com.cashflow.app.ui.bills
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -45,42 +50,39 @@ fun BillsScreen(repository: CashFlowRepository) {
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
+        // View mode toggle with + button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Bills",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                FilterChip(
+                    selected = state.viewMode == BillsViewMode.DEFAULT,
+                    onClick = { viewModel.handleIntent(BillsIntent.SetViewMode(BillsViewMode.DEFAULT)) },
+                    label = { Text("Default", style = MaterialTheme.typography.labelSmall) }
+                )
+                FilterChip(
+                    selected = state.viewMode == BillsViewMode.DATE_SORTED,
+                    onClick = { viewModel.handleIntent(BillsIntent.SetViewMode(BillsViewMode.DATE_SORTED)) },
+                    label = { Text("By Date", style = MaterialTheme.typography.labelSmall) }
+                )
+            }
+            
             FloatingActionButton(
                 onClick = { viewModel.handleIntent(BillsIntent.ShowAddDialog) },
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(48.dp),
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Bill")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Add Bill",
+                    modifier = Modifier.size(24.dp)
+                )
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // View mode toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = state.viewMode == BillsViewMode.DEFAULT,
-                onClick = { viewModel.handleIntent(BillsIntent.SetViewMode(BillsViewMode.DEFAULT)) },
-                label = { Text("Default", style = MaterialTheme.typography.labelSmall) }
-            )
-            FilterChip(
-                selected = state.viewMode == BillsViewMode.DATE_SORTED,
-                onClick = { viewModel.handleIntent(BillsIntent.SetViewMode(BillsViewMode.DATE_SORTED)) },
-                label = { Text("By Date", style = MaterialTheme.typography.labelSmall) }
-            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -177,18 +179,27 @@ fun BillItem(
     onEditAmount: (BillOccurrence) -> Unit,
     onMarkPaid: (BillOccurrence) -> Unit
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val upcomingCount = occurrences.size
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded },
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isExpanded) 4.dp else 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (isExpanded) 
+                MaterialTheme.colorScheme.surfaceVariant 
+            else 
+                MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(16.dp)
         ) {
+            // Always visible: Name and Amount
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -198,68 +209,139 @@ fun BillItem(
                     Text(
                         text = bill.name,
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = bill.recurrenceType.name.replace("_", " "),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = formatCurrency(bill.amount),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFEF4444)
-                    )
+                    if (!isExpanded) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = bill.recurrenceType.name.replace("_", " ").lowercase()
+                                    .replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (upcomingCount > 0) {
+                                Text(
+                                    text = "•",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "$upcomingCount upcoming",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                 }
+                
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onEdit) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = MaterialTheme.colorScheme.primary
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = formatCurrency(bill.amount),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                    Icon(
+                        if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             
-            // Show future occurrences
-            if (occurrences.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Divider()
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Upcoming Due Dates",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                occurrences.take(6).forEach { occurrence ->
-                    BillOccurrenceItem(
-                        occurrence = occurrence,
-                        onEditAmount = { onEditAmount(occurrence) },
-                        onMarkPaid = { onMarkPaid(occurrence) }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                if (occurrences.size > 6) {
-                    Text(
-                        text = "... and ${occurrences.size - 6} more",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            // Expanded content
+            androidx.compose.animation.AnimatedVisibility(visible = isExpanded) {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Bill details
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Recurrence",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = bill.recurrenceType.name.replace("_", " "),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            IconButton(onClick = onEdit) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Edit",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            IconButton(onClick = onDelete) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Show future occurrences
+                    if (occurrences.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Divider()
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Upcoming Due Dates",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "$upcomingCount total",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        occurrences.take(5).forEach { occurrence ->
+                            BillOccurrenceItem(
+                                occurrence = occurrence,
+                                onEditAmount = { onEditAmount(occurrence) },
+                                onMarkPaid = { onMarkPaid(occurrence) }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        if (occurrences.size > 5) {
+                            Text(
+                                text = "... and ${occurrences.size - 5} more",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -710,9 +792,10 @@ fun DateSortedBillsView(
     onEditAmount: (BillOccurrence) -> Unit,
     onMarkPaid: (BillOccurrence) -> Unit
 ) {
-    // Collect all occurrences and sort by date
+    // Collect all occurrences and group by date
     val allOccurrences = billOccurrences.values.flatten()
         .sortedBy { it.dueDate }
+        .groupBy { it.dueDate }
     
     // Create a map of bill ID to bill for quick lookup
     val billsMap = bills.associateBy { it.id }
@@ -722,28 +805,62 @@ fun DateSortedBillsView(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "No upcoming bills",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Receipt,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+                Text(
+                    text = "No upcoming bills",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Bills will appear here as they become due",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
         }
     } else {
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            items(allOccurrences) { occurrence ->
-                val bill = billsMap[occurrence.bill.id]
-                if (bill != null) {
-                    DateSortedBillOccurrenceItem(
-                        occurrence = occurrence,
-                        bill = bill,
-                        onEdit = { onEdit(bill) },
-                        onDelete = { onDelete(bill) },
-                        onEditAmount = { onEditAmount(occurrence) },
-                        onMarkPaid = { onMarkPaid(occurrence) }
+            allOccurrences.forEach { (date, occurrencesForDate) ->
+                // Date header (sticky-like appearance)
+                item {
+                    DateHeaderCard(
+                        date = date,
+                        billCount = occurrencesForDate.size,
+                        totalAmount = occurrencesForDate.sumOf { it.amount }
                     )
+                }
+                
+                // Bills for this date
+                items(occurrencesForDate.size) { index ->
+                    val occurrence = occurrencesForDate[index]
+                    val bill = billsMap[occurrence.bill.id]
+                    if (bill != null) {
+                        GroupedBillOccurrenceItem(
+                            occurrence = occurrence,
+                            bill = bill,
+                            isLast = index == occurrencesForDate.size - 1,
+                            onEdit = { onEdit(bill) },
+                            onEditAmount = { onEditAmount(occurrence) },
+                            onMarkPaid = { onMarkPaid(occurrence) }
+                        )
+                    }
+                }
+                
+                // Spacer between date groups
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
@@ -751,106 +868,210 @@ fun DateSortedBillsView(
 }
 
 @Composable
-fun DateSortedBillOccurrenceItem(
-    occurrence: BillOccurrence,
-    bill: Bill,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onEditAmount: () -> Unit,
-    onMarkPaid: () -> Unit
+fun DateHeaderCard(
+    date: kotlinx.datetime.LocalDate,
+    billCount: Int,
+    totalAmount: Double
 ) {
+    val timeZone = kotlinx.datetime.TimeZone.currentSystemDefault()
+    val today = kotlinx.datetime.Clock.System.now().toLocalDateTime(timeZone).date
+    val daysUntil = (date.toEpochDays() - today.toEpochDays()).toInt()
+    
+    val dateLabel = when {
+        daysUntil == 0 -> "Today"
+        daysUntil == 1 -> "Tomorrow"
+        daysUntil < 7 -> "${daysUntil} days away"
+        else -> formatDateLong(date)
+    }
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column {
                 Text(
-                    text = bill.name,
+                    text = formatDate(date),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = dateLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = formatCurrency(totalAmount),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Text(
+                    text = "$billCount ${if (billCount == 1) "bill" else "bills"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun GroupedBillOccurrenceItem(
+    occurrence: BillOccurrence,
+    bill: Bill,
+    isLast: Boolean,
+    onEdit: () -> Unit,
+    onEditAmount: () -> Unit,
+    onMarkPaid: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (occurrence.isPaid) 
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            else 
+                MaterialTheme.colorScheme.surface
+        ),
+        shape = if (isLast) MaterialTheme.shapes.medium else androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                // Left side - Bill name with edit icon
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = bill.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (occurrence.isPaid) 
+                                MaterialTheme.colorScheme.onSurfaceVariant 
+                            else 
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                        if (occurrence.isPaid) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Paid",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Bill edit icon next to name
+                    if (!occurrence.isPaid) {
+                        IconButton(
+                            onClick = onEdit,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Edit Bill",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+                
+                // Right side - Amount with edit icon
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = formatDate(occurrence.dueDate),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (occurrence.isPaid) FontWeight.Normal else FontWeight.SemiBold,
-                        color = if (occurrence.isPaid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                    )
-                    if (occurrence.isPaid) {
+                    Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = "• ✓ Paid",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF10B981)
+                            text = formatCurrency(occurrence.amount),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (occurrence.isPaid) 
+                                MaterialTheme.colorScheme.onSurfaceVariant 
+                            else 
+                                MaterialTheme.colorScheme.error
                         )
-                    }
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Text(
-                        text = formatCurrency(occurrence.amount),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (occurrence.isPaid) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFFEF4444)
-                    )
-                    if (!occurrence.isPaid) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Edit Bill",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            IconButton(onClick = onEditAmount, modifier = Modifier.size(32.dp)) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Edit Amount",
-                                    tint = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Button(
-                                onClick = onMarkPaid,
-                                modifier = Modifier.height(32.dp)
+                        
+                        // Actions row for unpaid bills
+                        if (!occurrence.isPaid) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 8.dp)
                             ) {
-                                Text("Paid", style = MaterialTheme.typography.labelSmall)
+                                // Amount edit icon next to amount
+                                IconButton(
+                                    onClick = onEditAmount,
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Edit Amount",
+                                        tint = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                
+                                Button(
+                                    onClick = onMarkPaid,
+                                    modifier = Modifier.height(36.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondary
+                                    )
+                                ) {
+                                    Text("Paid", style = MaterialTheme.typography.labelMedium)
+                                }
                             }
                         }
                     }
                 }
+            }
+            
+            // Divider between bills (except for last one)
+            if (!isLast) {
+                Divider(
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
         }
     }
@@ -912,5 +1133,24 @@ fun getDaySuffix(day: Int): String {
         day % 10 == 3 -> "rd"
         else -> "th"
     }
+}
+
+fun formatDateLong(date: kotlinx.datetime.LocalDate): String {
+    val monthName = when (date.monthNumber) {
+        1 -> "Jan"
+        2 -> "Feb"
+        3 -> "Mar"
+        4 -> "Apr"
+        5 -> "May"
+        6 -> "Jun"
+        7 -> "Jul"
+        8 -> "Aug"
+        9 -> "Sep"
+        10 -> "Oct"
+        11 -> "Nov"
+        12 -> "Dec"
+        else -> ""
+    }
+    return "$monthName ${date.dayOfMonth}, ${date.year}"
 }
 
