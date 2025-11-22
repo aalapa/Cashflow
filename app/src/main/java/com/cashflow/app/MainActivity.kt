@@ -14,12 +14,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.cashflow.app.ui.theme.CashFlowTheme
 import com.cashflow.app.ui.navigation.CashFlowNavigation
+import com.google.firebase.FirebaseApp
 
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize Firebase
+        FirebaseApp.initializeApp(this)
+        
         prefs = getSharedPreferences("cashflow_prefs", MODE_PRIVATE)
         
         setContent {

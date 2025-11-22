@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -95,6 +96,11 @@ dependencies {
     
     // Work Manager for notifications
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
     
     // Testing
     testImplementation("junit:junit:4.13.2")
