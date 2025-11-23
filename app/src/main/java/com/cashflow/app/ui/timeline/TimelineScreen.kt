@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -561,6 +562,7 @@ fun CalendarMonthView(
                                     balance = dayData.balance,
                                     isNegative = dayData.isNegative,
                                     isWarning = dayData.isWarning,
+                                    hasUnpaidBills = dayData.bills.isNotEmpty(),
                                     onClick = { onDayClick(dayData) }
                                 )
                             }
@@ -578,16 +580,22 @@ fun CalendarDayCell(
     balance: Double,
     isNegative: Boolean,
     isWarning: Boolean,
+    hasUnpaidBills: Boolean,
     onClick: () -> Unit = {}
 ) {
+    // If there are unpaid bills and balance is positive, use light green background with red text
+    val hasUnpaidBillsAndPositive = hasUnpaidBills && balance > 0 && !isNegative && !isWarning
+    
     val backgroundColor = when {
         isNegative -> Color(0xFFEF4444) // Red
         isWarning -> Color(0xFFFFB020) // Amber
+        hasUnpaidBillsAndPositive -> Color(0xFF10B981).copy(alpha = 0.3f) // Light green
         balance > 0 -> Color(0xFF10B981) // Green
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
 
     val textColor = when {
+        hasUnpaidBillsAndPositive -> Color(0xFFEF4444) // Red text for unpaid bills
         isNegative || isWarning || balance > 0 -> Color.White
         else -> MaterialTheme.colorScheme.onSurface
     }
@@ -601,26 +609,52 @@ fun CalendarDayCell(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = day.toString(),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = textColor
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = formatCurrencyCompact(balance),
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = 9.sp,
-                color = textColor
-            )
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Date with alert icon overlay (if unpaid bills)
+                if (hasUnpaidBillsAndPositive) {
+                    Box(
+                        modifier = Modifier.size(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Unpaid bills",
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = day.toString(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                    }
+                } else {
+                    Text(
+                        text = day.toString(),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = formatCurrencyCompact(balance),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
+                    color = textColor
+                )
+            }
         }
     }
 }
