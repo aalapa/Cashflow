@@ -16,6 +16,7 @@ class TransactionsViewModel(
     init {
         handleIntent(TransactionsIntent.LoadTransactions)
         loadAccounts()
+        loadEnvelopes()
     }
 
     private fun loadAccounts() {
@@ -26,6 +27,18 @@ class TransactionsViewModel(
                 }
                 .collect { accounts ->
                     _state.update { it.copy(accounts = accounts) }
+                }
+        }
+    }
+
+    private fun loadEnvelopes() {
+        viewModelScope.launch {
+            repository.getAllActiveEnvelopes()
+                .catch { e ->
+                    _state.update { it.copy(error = e.message) }
+                }
+                .collect { envelopes ->
+                    _state.update { it.copy(envelopes = envelopes) }
                 }
         }
     }
@@ -55,10 +68,19 @@ class TransactionsViewModel(
             is TransactionsIntent.SaveTransaction -> {
                 viewModelScope.launch {
                     try {
-                        if (intent.transaction.id == 0L) {
-                            repository.insertTransaction(intent.transaction)
+                        var transaction = intent.transaction
+                        // Apply auto-categorization if no envelope is set
+                        if (transaction.envelopeId == null) {
+                            val envelopeId = repository.applyAutoCategorization(transaction)
+                            if (envelopeId != null) {
+                                transaction = transaction.copy(envelopeId = envelopeId)
+                            }
+                        }
+                        
+                        if (transaction.id == 0L) {
+                            repository.insertTransaction(transaction)
                         } else {
-                            repository.updateTransaction(intent.transaction)
+                            repository.updateTransaction(transaction)
                         }
                         _state.update { it.copy(showAddDialog = false, editingTransaction = null) }
                     } catch (e: Exception) {

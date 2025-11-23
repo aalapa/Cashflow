@@ -19,6 +19,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.cashflow.app.di.AppModule
 import com.cashflow.app.ui.accounts.AccountsScreen
 import com.cashflow.app.ui.bills.BillsScreen
@@ -29,9 +31,26 @@ import com.cashflow.app.ui.settings.SettingsScreen
 import com.cashflow.app.ui.settings.SettingsViewModel
 import com.cashflow.app.ui.timeline.TimelineScreen
 import com.cashflow.app.ui.transactions.TransactionsScreen
+import com.cashflow.app.ui.flow.FlowScreen
+import com.cashflow.app.ui.envelopes.EnvelopeScreen
+import com.cashflow.app.ui.allocation.AllocationScreen
+import com.cashflow.app.ui.envelopes.EnvelopeDashboardScreen
+import com.cashflow.app.ui.envelopes.EnvelopeTransferScreen
+import com.cashflow.app.ui.envelopes.CategorizationRulesScreen
+import com.cashflow.app.ui.envelopes.EnvelopeAnalyticsScreen
+import com.cashflow.app.ui.envelopes.EnvelopeHistoryScreen
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    // Primary envelope budgeting screens
+    object Envelopes : Screen("envelopes", "Envelopes", Icons.Default.Folder)
+    object Allocation : Screen("allocation", "Allocate", Icons.Default.AccountBalanceWallet)
+    object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Dashboard)
+    
+    // Flow (cash flow features)
+    object Flow : Screen("flow", "Flow", Icons.Default.TrendingUp)
+    
+    // Secondary screens (not in bottom nav)
     object Timeline : Screen("timeline", "Timeline", Icons.Default.DateRange)
     object Accounts : Screen("accounts", "Accounts", Icons.Default.AccountBalance)
     object Bills : Screen("bills", "Bills", Icons.Default.Receipt)
@@ -49,12 +68,12 @@ fun CashFlowNavigation(
     val navController = rememberNavController()
     val context = LocalContext.current
     val repository = AppModule.provideRepository(context)
+    // Primary bottom navigation screens - envelope budgeting focused
     val screens = listOf(
-        Screen.Timeline,
-        Screen.Accounts,
-        Screen.Bills,
-        Screen.Income,
-        Screen.Transactions
+        Screen.Envelopes,
+        Screen.Allocation,
+        Screen.Dashboard,
+        Screen.Flow
     )
     
     // Get current dark theme preference
@@ -73,7 +92,7 @@ fun CashFlowNavigation(
             TopAppBar(
                 title = { 
                     Text(
-                        text = currentScreen?.title ?: "Cash Flow",
+                        text = currentScreen?.title ?: "myBudgy",
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -151,9 +170,73 @@ fun CashFlowNavigation(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Timeline.route,
+            startDestination = Screen.Envelopes.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            // Primary envelope budgeting screens
+            composable(Screen.Envelopes.route) {
+                EnvelopeScreen(
+                    repository = repository,
+                    onNavigateToAllocation = { navController.navigate(Screen.Allocation.route) },
+                    onNavigateToDashboard = { navController.navigate(Screen.Dashboard.route) },
+                    onNavigateToTransfers = { navController.navigate("envelope_transfers") },
+                    onNavigateToRules = { navController.navigate("categorization_rules") },
+                    onNavigateToAnalytics = { navController.navigate("envelope_analytics") }
+                )
+            }
+            composable(Screen.Allocation.route) {
+                AllocationScreen(
+                    repository = repository,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Dashboard.route) {
+                EnvelopeDashboardScreen(
+                    repository = repository,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToHistory = { envelope ->
+                        navController.navigate("envelope_history/${envelope.id}")
+                    }
+                )
+            }
+            
+            // Envelope sub-screens
+            composable("envelope_transfers") {
+                EnvelopeTransferScreen(
+                    repository = repository,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("categorization_rules") {
+                CategorizationRulesScreen(
+                    repository = repository,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("envelope_analytics") {
+                EnvelopeAnalyticsScreen(
+                    repository = repository,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = "envelope_history/{envelopeId}",
+                arguments = listOf(navArgument("envelopeId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val envelopeId = backStackEntry.arguments?.getLong("envelopeId") ?: 0L
+                EnvelopeHistoryScreen(
+                    envelopeId = envelopeId,
+                    repository = repository,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            // Flow screen (contains Timeline and Log)
+            composable(Screen.Flow.route) {
+                FlowScreen(repository = repository)
+            }
+            
+            // Secondary screens (accessible from within other screens)
             composable(Screen.Timeline.route) {
                 TimelineScreen(repository = repository)
             }
@@ -195,8 +278,8 @@ fun CashFlowNavigation(
                         try {
                             repository.clearAllData()
                             showResetDialog = false
-                            // Navigate back to timeline
-                            navController.navigate(Screen.Timeline.route) {
+                            // Navigate back to envelopes
+                            navController.navigate(Screen.Envelopes.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = false
                                 }

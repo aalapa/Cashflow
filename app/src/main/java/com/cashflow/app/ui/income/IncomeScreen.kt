@@ -217,14 +217,18 @@ fun IncomeItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                  occurrences.take(6).forEach { occurrence ->
-                      IncomeOccurrenceItem(
-                          occurrence = occurrence,
-                          onEditAmount = { onEditAmount(occurrence) },
-                          onMarkReceived = { onMarkReceived(occurrence) }
-                      )
-                      Spacer(modifier = Modifier.height(8.dp))
-                  }
+                val topOccurrences = occurrences.take(6)
+                for (index in topOccurrences.indices) {
+                    val occurrence = topOccurrences[index]
+                    IncomeOccurrenceItem(
+                        occurrence = occurrence,
+                        onEditAmount = { onEditAmount(occurrence) },
+                        onMarkReceived = { onMarkReceived(occurrence) }
+                    )
+                    if (index < topOccurrences.size - 1) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
                 if (occurrences.size > 6) {
                     Text(
                         text = "... and ${occurrences.size - 6} more",

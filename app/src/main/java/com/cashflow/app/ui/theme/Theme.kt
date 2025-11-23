@@ -15,26 +15,34 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// myBudgy - Modern Purple & Teal Theme
 private val DarkColorScheme = darkColorScheme(
-    primary = androidx.compose.ui.graphics.Color(0xFF4A90E2),
-    secondary = androidx.compose.ui.graphics.Color(0xFF50C878),
-    tertiary = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
-    background = androidx.compose.ui.graphics.Color(0xFF121212),
-    surface = androidx.compose.ui.graphics.Color(0xFF1E1E1E),
-    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF2C2C2C),
-    onBackground = androidx.compose.ui.graphics.Color(0xFFE0E0E0),
-    onSurface = androidx.compose.ui.graphics.Color(0xFFE0E0E0),
-    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFB0B0B0),
-    error = androidx.compose.ui.graphics.Color(0xFFE53935)
+    primary = androidx.compose.ui.graphics.Color(0xFF9D4EDD), // Vibrant purple
+    secondary = androidx.compose.ui.graphics.Color(0xFF06B6D4), // Cyan/Teal
+    tertiary = androidx.compose.ui.graphics.Color(0xFFFF6B9D), // Pink accent
+    background = androidx.compose.ui.graphics.Color(0xFF0F0B1E), // Deep purple-black
+    surface = androidx.compose.ui.graphics.Color(0xFF1A1625),
+    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF2A2535),
+    onPrimary = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF000000),
+    onBackground = androidx.compose.ui.graphics.Color(0xFFE8E4F0),
+    onSurface = androidx.compose.ui.graphics.Color(0xFFE8E4F0),
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFB8B4C0),
+    error = androidx.compose.ui.graphics.Color(0xFFFF5252)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = androidx.compose.ui.graphics.Color(0xFF2563EB), // Modern blue
-    secondary = androidx.compose.ui.graphics.Color(0xFF10B981), // Success green
-    tertiary = androidx.compose.ui.graphics.Color(0xFFEF4444), // Error red
-    background = androidx.compose.ui.graphics.Color(0xFFF8FAFC), // Light gray background
+    primary = androidx.compose.ui.graphics.Color(0xFF7C3AED), // Rich purple
+    secondary = androidx.compose.ui.graphics.Color(0xFF0891B2), // Teal
+    tertiary = androidx.compose.ui.graphics.Color(0xFFEC4899), // Pink
+    background = androidx.compose.ui.graphics.Color(0xFFFAF5FF), // Light purple tint
     surface = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
-    surfaceVariant = androidx.compose.ui.graphics.Color(0xFFF1F5F9),
+    surfaceVariant = androidx.compose.ui.graphics.Color(0xFFF3E8FF), // Very light purple
+    onPrimary = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+    onSecondary = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+    onBackground = androidx.compose.ui.graphics.Color(0xFF1E1B24),
+    onSurface = androidx.compose.ui.graphics.Color(0xFF1E1B24),
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF4B5563),
     error = androidx.compose.ui.graphics.Color(0xFFDC2626)
 )
 

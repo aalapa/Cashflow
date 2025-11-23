@@ -5,14 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -150,9 +143,10 @@ fun BillsScreen(repository: CashFlowRepository) {
             MarkPaidDialog(
                 occurrence = billToMarkPaid,
                 accounts = state.accounts,
+                envelopes = state.envelopes,
                 onDismiss = { viewModel.handleIntent(BillsIntent.HideMarkPaidDialog) },
-                onMarkPaid = { accountId ->
-                    viewModel.handleIntent(BillsIntent.MarkBillAsPaid(billToMarkPaid, accountId))
+                onMarkPaid = { accountId, envelopeId ->
+                    viewModel.handleIntent(BillsIntent.MarkBillAsPaid(billToMarkPaid, accountId, envelopeId))
                 }
             )
         }
@@ -324,13 +318,17 @@ fun BillItem(
                             )
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        occurrences.take(5).forEach { occurrence ->
+                        val topOccurrences = occurrences.take(5)
+                        for (index in topOccurrences.indices) {
+                            val occurrence = topOccurrences[index]
                             BillOccurrenceItem(
                                 occurrence = occurrence,
                                 onEditAmount = { onEditAmount(occurrence) },
                                 onMarkPaid = { onMarkPaid(occurrence) }
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            if (index < topOccurrences.size - 1) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
                         }
                         if (occurrences.size > 5) {
                             Text(
@@ -411,12 +409,14 @@ fun BillOccurrenceItem(
 fun MarkPaidDialog(
     occurrence: BillOccurrence,
     accounts: List<com.cashflow.app.domain.model.Account>,
+    envelopes: List<com.cashflow.app.domain.model.Envelope> = emptyList(),
     onDismiss: () -> Unit,
-    onMarkPaid: (Long) -> Unit
+    onMarkPaid: (Long, Long?) -> Unit
 ) {
     var selectedAccountId by remember { 
         mutableStateOf(accounts.firstOrNull()?.id ?: 0L) 
     }
+    var selectedEnvelopeId by remember { mutableStateOf<Long?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -467,11 +467,71 @@ fun MarkPaidDialog(
                         }
                     }
                 }
+                
+                // Envelope picker (optional)
+                if (envelopes.isNotEmpty()) {
+                    var envelopeExpanded by remember { mutableStateOf(false) }
+                    val selectedEnvelope = envelopes.find { it.id == selectedEnvelopeId }
+                    
+                    ExposedDropdownMenuBox(
+                        expanded = envelopeExpanded,
+                        onExpandedChange = { envelopeExpanded = !envelopeExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedEnvelope?.name ?: "Select Envelope (Optional)",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Envelope") },
+                            leadingIcon = {
+                                selectedEnvelope?.let {
+                                    Icon(
+                                        imageVector = getIconForString(it.icon ?: "Folder"),
+                                        contentDescription = null,
+                                        tint = it.color,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = envelopeExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = envelopeExpanded,
+                            onDismissRequest = { envelopeExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("None") },
+                                onClick = {
+                                    selectedEnvelopeId = null
+                                    envelopeExpanded = false
+                                }
+                            )
+                            envelopes.forEach { envelope ->
+                                DropdownMenuItem(
+                                    text = { Text(envelope.name) },
+                                    onClick = {
+                                        selectedEnvelopeId = envelope.id
+                                        envelopeExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = getIconForString(envelope.icon ?: "Folder"),
+                                            contentDescription = null,
+                                            tint = envelope.color
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onMarkPaid(selectedAccountId) }
+                onClick = { onMarkPaid(selectedAccountId, selectedEnvelopeId) }
             ) {
                 Text("Paid")
             }
@@ -1152,5 +1212,21 @@ fun formatDateLong(date: kotlinx.datetime.LocalDate): String {
         else -> ""
     }
     return "$monthName ${date.dayOfMonth}, ${date.year}"
+}
+
+fun getIconForString(iconName: String): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (iconName) {
+        "Folder" -> Icons.Default.Folder
+        "Fastfood" -> Icons.Default.Fastfood
+        "Home" -> Icons.Default.Home
+        "Car" -> Icons.Default.DirectionsCar
+        "School" -> Icons.Default.School
+        "ShoppingCart" -> Icons.Default.ShoppingCart
+        "LocalGasStation" -> Icons.Default.LocalGasStation
+        "Movie" -> Icons.Default.Movie
+        "FitnessCenter" -> Icons.Default.FitnessCenter
+        "HealthAndSafety" -> Icons.Default.HealthAndSafety
+        else -> Icons.Default.Folder
+    }
 }
 

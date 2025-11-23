@@ -549,7 +549,7 @@ ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transfo
 		ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transforms/26eb4285ab6b50e36b1c001b357d2bcc/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transforms/26eb4285ab6b50e36b1c001b357d2bcc/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-permission#com.cashflow.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission#com.mybudgy.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transforms/26eb4285ab6b50e36b1c001b357d2bcc/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
 	android:protectionLevel
 		ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transforms/26eb4285ab6b50e36b1c001b357d2bcc/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
@@ -559,7 +559,7 @@ uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transforms/26eb4285ab6b50e36b1c001b357d2bcc/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transforms/26eb4285ab6b50e36b1c001b357d2bcc/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-uses-permission#com.cashflow.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission#com.mybudgy.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transforms/26eb4285ab6b50e36b1c001b357d2bcc/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/ragnor/.gradle/caches/8.13/transforms/26eb4285ab6b50e36b1c001b357d2bcc/transformed/core-1.12.0/AndroidManifest.xml:26:22-94

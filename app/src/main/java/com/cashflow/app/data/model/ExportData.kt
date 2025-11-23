@@ -15,7 +15,11 @@ data class ExportData(
     val bills: List<SerializableBill>,
     val billOverrides: List<SerializableBillOverride>,
     val billPayments: List<SerializableBillPayment>,
-    val transactions: List<SerializableTransaction>
+    val transactions: List<SerializableTransaction>,
+    val envelopes: List<SerializableEnvelope> = emptyList(),
+    val envelopeAllocations: List<SerializableEnvelopeAllocation> = emptyList(),
+    val envelopeTransfers: List<SerializableEnvelopeTransfer> = emptyList(),
+    val categorizationRules: List<SerializableCategorizationRule> = emptyList()
 )
 
 @Serializable
@@ -87,7 +91,8 @@ data class SerializableTransaction(
     val description: String,
     val relatedBillId: Long?,
     val relatedIncomeId: Long?,
-    val toAccountId: Long?
+    val toAccountId: Long?,
+    val envelopeId: Long? = null
 )
 
 // Extension functions to convert entities to serializable format
@@ -153,7 +158,8 @@ fun TransactionEntity.toSerializable() = SerializableTransaction(
     description = description,
     relatedBillId = relatedBillId,
     relatedIncomeId = relatedIncomeId,
-    toAccountId = toAccountId
+    toAccountId = toAccountId,
+    envelopeId = envelopeId
 )
 
 // Extension functions to convert serializable format back to entities
@@ -220,6 +226,135 @@ fun SerializableTransaction.toEntity() = TransactionEntity(
     description = description,
     relatedBillId = relatedBillId,
     relatedIncomeId = relatedIncomeId,
-    toAccountId = toAccountId
+    toAccountId = toAccountId,
+    envelopeId = envelopeId
+)
+
+@Serializable
+data class SerializableEnvelope(
+    val id: Long,
+    val name: String,
+    val color: String,
+    val icon: String?,
+    val budgetedAmount: Double,
+    val periodType: String,
+    val accountId: Long?,
+    val carryOverEnabled: Boolean,
+    val isActive: Boolean,
+    val createdAt: String
+)
+
+@Serializable
+data class SerializableEnvelopeAllocation(
+    val id: Long,
+    val envelopeId: Long,
+    val amount: Double,
+    val periodStart: String,
+    val periodEnd: String,
+    val incomeId: Long?,
+    val createdAt: String
+)
+
+@Serializable
+data class SerializableEnvelopeTransfer(
+    val id: Long,
+    val fromEnvelopeId: Long,
+    val toEnvelopeId: Long,
+    val amount: Double,
+    val date: String,
+    val description: String?,
+    val timestamp: String
+)
+
+@Serializable
+data class SerializableCategorizationRule(
+    val id: Long,
+    val envelopeId: Long,
+    val keyword: String,
+    val isActive: Boolean,
+    val createdAt: String
+)
+
+// Extension functions for envelope serialization
+fun EnvelopeEntity.toSerializable() = SerializableEnvelope(
+    id = id,
+    name = name,
+    color = color,
+    icon = icon,
+    budgetedAmount = budgetedAmount,
+    periodType = periodType.name,
+    accountId = accountId,
+    carryOverEnabled = carryOverEnabled,
+    isActive = isActive,
+    createdAt = createdAt.toString()
+)
+
+fun EnvelopeAllocationEntity.toSerializable() = SerializableEnvelopeAllocation(
+    id = id,
+    envelopeId = envelopeId,
+    amount = amount,
+    periodStart = periodStart.toString(),
+    periodEnd = periodEnd.toString(),
+    incomeId = incomeId,
+    createdAt = createdAt.toString()
+)
+
+fun EnvelopeTransferEntity.toSerializable() = SerializableEnvelopeTransfer(
+    id = id,
+    fromEnvelopeId = fromEnvelopeId,
+    toEnvelopeId = toEnvelopeId,
+    amount = amount,
+    date = date.toString(),
+    description = description,
+    timestamp = timestamp.toString()
+)
+
+fun CategorizationRuleEntity.toSerializable() = SerializableCategorizationRule(
+    id = id,
+    envelopeId = envelopeId,
+    keyword = keyword,
+    isActive = isActive,
+    createdAt = createdAt.toString()
+)
+
+fun SerializableEnvelope.toEntity() = EnvelopeEntity(
+    id = id,
+    name = name,
+    color = color,
+    icon = icon,
+    budgetedAmount = budgetedAmount,
+    periodType = RecurrenceType.valueOf(periodType),
+    accountId = accountId,
+    carryOverEnabled = carryOverEnabled,
+    createdAt = LocalDateTime.parse(createdAt),
+    isActive = isActive
+)
+
+fun SerializableEnvelopeAllocation.toEntity() = EnvelopeAllocationEntity(
+    id = id,
+    envelopeId = envelopeId,
+    amount = amount,
+    periodStart = LocalDate.parse(periodStart),
+    periodEnd = LocalDate.parse(periodEnd),
+    incomeId = incomeId,
+    createdAt = LocalDateTime.parse(createdAt)
+)
+
+fun SerializableEnvelopeTransfer.toEntity() = EnvelopeTransferEntity(
+    id = id,
+    fromEnvelopeId = fromEnvelopeId,
+    toEnvelopeId = toEnvelopeId,
+    amount = amount,
+    date = LocalDate.parse(date),
+    description = description,
+    timestamp = LocalDateTime.parse(timestamp)
+)
+
+fun SerializableCategorizationRule.toEntity() = CategorizationRuleEntity(
+    id = id,
+    envelopeId = envelopeId,
+    keyword = keyword,
+    isActive = isActive,
+    createdAt = LocalDateTime.parse(createdAt)
 )
 

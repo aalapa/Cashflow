@@ -33,6 +33,10 @@ object AppModule {
                 db.billDao(),
                 db.billPaymentDao(),
                 db.transactionDao(),
+                db.envelopeDao(),
+                db.envelopeAllocationDao(),
+                db.envelopeTransferDao(),
+                db.categorizationRuleDao(),
                 db
             )
         }

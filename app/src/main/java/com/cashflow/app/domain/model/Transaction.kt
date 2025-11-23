@@ -14,6 +14,7 @@ data class Transaction(
     val timestamp: LocalDateTime,
     val description: String,
     val relatedBillId: Long? = null,
-    val relatedIncomeId: Long? = null
+    val relatedIncomeId: Long? = null,
+    val envelopeId: Long? = null // Link to an envelope for budgeting
 )
 

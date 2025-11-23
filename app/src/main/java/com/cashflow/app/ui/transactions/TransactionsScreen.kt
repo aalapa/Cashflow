@@ -4,9 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -65,8 +63,10 @@ fun TransactionsScreen(repository: CashFlowRepository) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(state.transactions) { transaction ->
+                    val envelope = state.envelopes.find { it.id == transaction.envelopeId }
                     TransactionItem(
                         transaction = transaction,
+                        envelope = envelope,
                         onEdit = { viewModel.handleIntent(TransactionsIntent.EditTransaction(transaction)) },
                         onDelete = { viewModel.handleIntent(TransactionsIntent.DeleteTransaction(transaction)) }
                     )
@@ -78,6 +78,7 @@ fun TransactionsScreen(repository: CashFlowRepository) {
             TransactionDialog(
                 transaction = state.editingTransaction,
                 accounts = state.accounts,
+                envelopes = state.envelopes,
                 onDismiss = { viewModel.handleIntent(TransactionsIntent.HideAddDialog) },
                 onSave = { transaction ->
                     viewModel.handleIntent(TransactionsIntent.SaveTransaction(transaction))
@@ -90,6 +91,7 @@ fun TransactionsScreen(repository: CashFlowRepository) {
 @Composable
 fun TransactionItem(
     transaction: Transaction,
+    envelope: com.cashflow.app.domain.model.Envelope? = null,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -110,12 +112,23 @@ fun TransactionItem(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = transaction.type.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercaseChar() },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = transaction.type.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercaseChar() },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                    if (envelope != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = getIconForString(envelope.icon ?: "Folder"),
+                            contentDescription = envelope.name,
+                            tint = envelope.color,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
                 Text(
                     text = formatDate(transaction.date),
                     style = MaterialTheme.typography.bodySmall,
@@ -144,6 +157,7 @@ fun TransactionItem(
 fun TransactionDialog(
     transaction: Transaction?,
     accounts: List<com.cashflow.app.domain.model.Account>,
+    envelopes: List<com.cashflow.app.domain.model.Envelope> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (Transaction) -> Unit
 ) {
@@ -152,6 +166,7 @@ fun TransactionDialog(
     var type by remember { mutableStateOf(transaction?.type ?: TransactionType.MANUAL_ADJUSTMENT) }
     var selectedAccountId by remember { mutableStateOf(transaction?.accountId ?: (accounts.firstOrNull()?.id ?: 0L)) }
     var selectedToAccountId by remember { mutableStateOf(transaction?.toAccountId ?: (accounts.getOrNull(1)?.id)) }
+    var selectedEnvelopeId by remember { mutableStateOf<Long?>(transaction?.envelopeId) }
     val timeZone = TimeZone.currentSystemDefault()
     val today = Clock.System.now().toLocalDateTime(timeZone).date
     val now = Clock.System.now().toLocalDateTime(timeZone)
@@ -272,6 +287,66 @@ fun TransactionDialog(
                         }
                     }
                 }
+                
+                // Envelope picker (optional)
+                if (envelopes.isNotEmpty()) {
+                    var envelopeExpanded by remember { mutableStateOf(false) }
+                    val selectedEnvelope = envelopes.find { it.id == selectedEnvelopeId }
+                    
+                    ExposedDropdownMenuBox(
+                        expanded = envelopeExpanded,
+                        onExpandedChange = { envelopeExpanded = !envelopeExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedEnvelope?.name ?: "Select Envelope (Optional)",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Envelope") },
+                            leadingIcon = {
+                                selectedEnvelope?.let {
+                                    Icon(
+                                        imageVector = getIconForString(it.icon ?: "Folder"),
+                                        contentDescription = null,
+                                        tint = it.color,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = envelopeExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = envelopeExpanded,
+                            onDismissRequest = { envelopeExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("None") },
+                                onClick = {
+                                    selectedEnvelopeId = null
+                                    envelopeExpanded = false
+                                }
+                            )
+                            envelopes.forEach { envelope ->
+                                DropdownMenuItem(
+                                    text = { Text(envelope.name) },
+                                    onClick = {
+                                        selectedEnvelopeId = envelope.id
+                                        envelopeExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = getIconForString(envelope.icon ?: "Folder"),
+                                            contentDescription = null,
+                                            tint = envelope.color
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -287,7 +362,8 @@ fun TransactionDialog(
                             amount = amountValue,
                             date = transaction?.date ?: today,
                             timestamp = transaction?.timestamp ?: now,
-                            description = description
+                            description = description,
+                            envelopeId = selectedEnvelopeId
                         )
                     )
                 }
@@ -305,5 +381,21 @@ fun TransactionDialog(
 
 fun formatDate(date: kotlinx.datetime.LocalDate): String {
     return "${date.year}-${date.monthNumber.toString().padStart(2, '0')}-${date.dayOfMonth.toString().padStart(2, '0')}"
+}
+
+fun getIconForString(iconName: String): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (iconName) {
+        "Folder" -> Icons.Default.Folder
+        "Fastfood" -> Icons.Default.Fastfood
+        "Home" -> Icons.Default.Home
+        "Car" -> Icons.Default.DirectionsCar
+        "School" -> Icons.Default.School
+        "ShoppingCart" -> Icons.Default.ShoppingCart
+        "LocalGasStation" -> Icons.Default.LocalGasStation
+        "Movie" -> Icons.Default.Movie
+        "FitnessCenter" -> Icons.Default.FitnessCenter
+        "HealthAndSafety" -> Icons.Default.HealthAndSafety
+        else -> Icons.Default.Folder
+    }
 }
 

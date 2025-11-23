@@ -55,7 +55,7 @@ public final class TransactionDao_Impl implements TransactionDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `transactions` (`id`,`accountId`,`toAccountId`,`type`,`amount`,`date`,`timestamp`,`description`,`relatedBillId`,`relatedIncomeId`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `transactions` (`id`,`accountId`,`toAccountId`,`type`,`amount`,`date`,`timestamp`,`description`,`relatedBillId`,`relatedIncomeId`,`envelopeId`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -85,6 +85,11 @@ public final class TransactionDao_Impl implements TransactionDao {
           statement.bindNull(10);
         } else {
           statement.bindLong(10, entity.getRelatedIncomeId());
+        }
+        if (entity.getEnvelopeId() == null) {
+          statement.bindNull(11);
+        } else {
+          statement.bindLong(11, entity.getEnvelopeId());
         }
       }
     };
@@ -105,7 +110,7 @@ public final class TransactionDao_Impl implements TransactionDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `transactions` SET `id` = ?,`accountId` = ?,`toAccountId` = ?,`type` = ?,`amount` = ?,`date` = ?,`timestamp` = ?,`description` = ?,`relatedBillId` = ?,`relatedIncomeId` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `transactions` SET `id` = ?,`accountId` = ?,`toAccountId` = ?,`type` = ?,`amount` = ?,`date` = ?,`timestamp` = ?,`description` = ?,`relatedBillId` = ?,`relatedIncomeId` = ?,`envelopeId` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -136,7 +141,12 @@ public final class TransactionDao_Impl implements TransactionDao {
         } else {
           statement.bindLong(10, entity.getRelatedIncomeId());
         }
-        statement.bindLong(11, entity.getId());
+        if (entity.getEnvelopeId() == null) {
+          statement.bindNull(11);
+        } else {
+          statement.bindLong(11, entity.getEnvelopeId());
+        }
+        statement.bindLong(12, entity.getId());
       }
     };
     this.__preparedStmtOfDeleteAllTransactions = new SharedSQLiteStatement(__db) {
@@ -249,6 +259,7 @@ public final class TransactionDao_Impl implements TransactionDao {
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfRelatedBillId = CursorUtil.getColumnIndexOrThrow(_cursor, "relatedBillId");
           final int _cursorIndexOfRelatedIncomeId = CursorUtil.getColumnIndexOrThrow(_cursor, "relatedIncomeId");
+          final int _cursorIndexOfEnvelopeId = CursorUtil.getColumnIndexOrThrow(_cursor, "envelopeId");
           final List<TransactionEntity> _result = new ArrayList<TransactionEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final TransactionEntity _item;
@@ -290,7 +301,13 @@ public final class TransactionDao_Impl implements TransactionDao {
             } else {
               _tmpRelatedIncomeId = _cursor.getLong(_cursorIndexOfRelatedIncomeId);
             }
-            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
+            final Long _tmpEnvelopeId;
+            if (_cursor.isNull(_cursorIndexOfEnvelopeId)) {
+              _tmpEnvelopeId = null;
+            } else {
+              _tmpEnvelopeId = _cursor.getLong(_cursorIndexOfEnvelopeId);
+            }
+            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId,_tmpEnvelopeId);
             _result.add(_item);
           }
           return _result;
@@ -328,6 +345,7 @@ public final class TransactionDao_Impl implements TransactionDao {
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfRelatedBillId = CursorUtil.getColumnIndexOrThrow(_cursor, "relatedBillId");
           final int _cursorIndexOfRelatedIncomeId = CursorUtil.getColumnIndexOrThrow(_cursor, "relatedIncomeId");
+          final int _cursorIndexOfEnvelopeId = CursorUtil.getColumnIndexOrThrow(_cursor, "envelopeId");
           final List<TransactionEntity> _result = new ArrayList<TransactionEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final TransactionEntity _item;
@@ -369,7 +387,13 @@ public final class TransactionDao_Impl implements TransactionDao {
             } else {
               _tmpRelatedIncomeId = _cursor.getLong(_cursorIndexOfRelatedIncomeId);
             }
-            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
+            final Long _tmpEnvelopeId;
+            if (_cursor.isNull(_cursorIndexOfEnvelopeId)) {
+              _tmpEnvelopeId = null;
+            } else {
+              _tmpEnvelopeId = _cursor.getLong(_cursorIndexOfEnvelopeId);
+            }
+            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId,_tmpEnvelopeId);
             _result.add(_item);
           }
           return _result;
@@ -412,6 +436,7 @@ public final class TransactionDao_Impl implements TransactionDao {
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfRelatedBillId = CursorUtil.getColumnIndexOrThrow(_cursor, "relatedBillId");
           final int _cursorIndexOfRelatedIncomeId = CursorUtil.getColumnIndexOrThrow(_cursor, "relatedIncomeId");
+          final int _cursorIndexOfEnvelopeId = CursorUtil.getColumnIndexOrThrow(_cursor, "envelopeId");
           final List<TransactionEntity> _result = new ArrayList<TransactionEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final TransactionEntity _item;
@@ -453,7 +478,13 @@ public final class TransactionDao_Impl implements TransactionDao {
             } else {
               _tmpRelatedIncomeId = _cursor.getLong(_cursorIndexOfRelatedIncomeId);
             }
-            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
+            final Long _tmpEnvelopeId;
+            if (_cursor.isNull(_cursorIndexOfEnvelopeId)) {
+              _tmpEnvelopeId = null;
+            } else {
+              _tmpEnvelopeId = _cursor.getLong(_cursorIndexOfEnvelopeId);
+            }
+            _item = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId,_tmpEnvelopeId);
             _result.add(_item);
           }
           return _result;
@@ -493,6 +524,7 @@ public final class TransactionDao_Impl implements TransactionDao {
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfRelatedBillId = CursorUtil.getColumnIndexOrThrow(_cursor, "relatedBillId");
           final int _cursorIndexOfRelatedIncomeId = CursorUtil.getColumnIndexOrThrow(_cursor, "relatedIncomeId");
+          final int _cursorIndexOfEnvelopeId = CursorUtil.getColumnIndexOrThrow(_cursor, "envelopeId");
           final TransactionEntity _result;
           if (_cursor.moveToFirst()) {
             final long _tmpId;
@@ -533,7 +565,13 @@ public final class TransactionDao_Impl implements TransactionDao {
             } else {
               _tmpRelatedIncomeId = _cursor.getLong(_cursorIndexOfRelatedIncomeId);
             }
-            _result = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId);
+            final Long _tmpEnvelopeId;
+            if (_cursor.isNull(_cursorIndexOfEnvelopeId)) {
+              _tmpEnvelopeId = null;
+            } else {
+              _tmpEnvelopeId = _cursor.getLong(_cursorIndexOfEnvelopeId);
+            }
+            _result = new TransactionEntity(_tmpId,_tmpAccountId,_tmpToAccountId,_tmpType,_tmpAmount,_tmpDate,_tmpTimestamp,_tmpDescription,_tmpRelatedBillId,_tmpRelatedIncomeId,_tmpEnvelopeId);
           } else {
             _result = null;
           }

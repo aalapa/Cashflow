@@ -35,6 +35,7 @@ data class TransactionEntity(
     val timestamp: LocalDateTime,
     val description: String,
     val relatedBillId: Long? = null, // If this transaction is related to a bill
-    val relatedIncomeId: Long? = null // If this transaction is related to income
+    val relatedIncomeId: Long? = null, // If this transaction is related to income
+    val envelopeId: Long? = null // Link to an envelope for budgeting
 )
 

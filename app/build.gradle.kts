@@ -10,7 +10,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.cashflow.app"
+        applicationId = "com.mybudgy.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

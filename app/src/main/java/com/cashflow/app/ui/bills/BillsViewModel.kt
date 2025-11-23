@@ -17,6 +17,7 @@ class BillsViewModel(
     init {
         handleIntent(BillsIntent.LoadBills)
         loadAccounts()
+        loadEnvelopes()
         loadFutureOccurrences()
     }
 
@@ -28,6 +29,18 @@ class BillsViewModel(
                 }
                 .collect { accounts ->
                     _state.update { it.copy(accounts = accounts) }
+                }
+        }
+    }
+
+    private fun loadEnvelopes() {
+        viewModelScope.launch {
+            repository.getAllActiveEnvelopes()
+                .catch { e ->
+                    _state.update { it.copy(error = e.message) }
+                }
+                .collect { envelopes ->
+                    _state.update { it.copy(envelopes = envelopes) }
                 }
         }
     }
@@ -107,7 +120,8 @@ class BillsViewModel(
                             billId = intent.occurrence.bill.id,
                             dueDate = intent.occurrence.dueDate,
                             accountId = intent.accountId,
-                            amount = intent.occurrence.amount
+                            amount = intent.occurrence.amount,
+                            envelopeId = intent.envelopeId
                         )
                         _state.update { it.copy(showMarkPaidDialog = false, billToMarkPaid = null) }
                         loadFutureOccurrences()

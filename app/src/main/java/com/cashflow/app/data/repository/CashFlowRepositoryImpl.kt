@@ -6,12 +6,16 @@ import com.cashflow.app.data.entity.*
 import com.cashflow.app.data.model.*
 import com.cashflow.app.domain.model.*
 import com.cashflow.app.domain.repository.CashFlowRepository
+import com.cashflow.app.domain.repository.EnvelopePeriodHistory
+import com.cashflow.app.domain.repository.MonthlySpending
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
+import kotlinx.datetime.toLocalDateTime
 
 class CashFlowRepositoryImpl(
     private val accountDao: AccountDao,
@@ -19,6 +23,10 @@ class CashFlowRepositoryImpl(
     private val billDao: BillDao,
     private val billPaymentDao: BillPaymentDao,
     private val transactionDao: TransactionDao,
+    private val envelopeDao: EnvelopeDao,
+    private val envelopeAllocationDao: EnvelopeAllocationDao,
+    private val envelopeTransferDao: EnvelopeTransferDao,
+    private val categorizationRuleDao: CategorizationRuleDao,
     private val database: CashFlowDatabase
 ) : CashFlowRepository {
 
@@ -109,7 +117,7 @@ class CashFlowRepositoryImpl(
         }
     }
 
-    override suspend fun markBillAsPaid(billId: Long, dueDate: LocalDate, accountId: Long, amount: Double): Long {
+    override suspend fun markBillAsPaid(billId: Long, dueDate: LocalDate, accountId: Long, amount: Double, envelopeId: Long?): Long {
         val now = Clock.System.now()
         val timestamp = now.toLocalDateTime(TimeZone.currentSystemDefault())
         
@@ -122,7 +130,8 @@ class CashFlowRepositoryImpl(
             date = dueDate,
             timestamp = timestamp,
             description = "Bill payment",
-            relatedBillId = billId
+            relatedBillId = billId,
+            envelopeId = envelopeId
         )
         // insertTransaction automatically updates account balance
         val transactionId = insertTransaction(transaction)
@@ -387,6 +396,10 @@ class CashFlowRepositoryImpl(
         // Clear all data from all tables in proper order (respecting foreign keys)
         billPaymentDao.deleteAllPayments()
         transactionDao.deleteAllTransactions()
+        envelopeTransferDao.deleteAllTransfers()
+        categorizationRuleDao.deleteAllRules()
+        envelopeAllocationDao.deleteAllAllocations()
+        envelopeDao.deleteAllEnvelopes()
         billDao.deleteAllOverrides()
         billDao.deleteAllBills()
         incomeDao.deleteAllOverrides()
@@ -417,6 +430,15 @@ class CashFlowRepositoryImpl(
             billPayments.addAll(billPaymentDao.getPaymentsForBill(bill.id).first())
         }
         
+        // Get envelope data
+        val envelopes = envelopeDao.getAllEnvelopes().first()
+        val envelopeAllocations = mutableListOf<EnvelopeAllocationEntity>()
+        envelopes.forEach { env ->
+            envelopeAllocations.addAll(envelopeAllocationDao.getAllocationsForEnvelope(env.id).first())
+        }
+        val envelopeTransfers = envelopeTransferDao.getAllTransfers().first()
+        val categorizationRules = categorizationRuleDao.getAllActiveRules().first()
+        
         val exportData = com.cashflow.app.data.model.ExportData(
             version = 1,
             exportDate = Clock.System.now().toString(),
@@ -426,7 +448,11 @@ class CashFlowRepositoryImpl(
             bills = bills.map { it.toSerializable() },
             billOverrides = billOverrides.map { it.toSerializable() },
             billPayments = billPayments.map { it.toSerializable() },
-            transactions = transactions.map { it.toSerializable() }
+            transactions = transactions.map { it.toSerializable() },
+            envelopes = envelopes.map { it.toSerializable() },
+            envelopeAllocations = envelopeAllocations.map { it.toSerializable() },
+            envelopeTransfers = envelopeTransfers.map { it.toSerializable() },
+            categorizationRules = categorizationRules.map { it.toSerializable() }
         )
         
         val json = kotlinx.serialization.json.Json {
@@ -454,6 +480,10 @@ class CashFlowRepositoryImpl(
                 // Clear existing data first (in proper order)
                 billPaymentDao.deleteAllPayments()
                 transactionDao.deleteAllTransactions()
+                envelopeTransferDao.deleteAllTransfers()
+                categorizationRuleDao.deleteAllRules()
+                envelopeAllocationDao.deleteAllAllocations()
+                envelopeDao.deleteAllEnvelopes()
                 billDao.deleteAllOverrides()
                 billDao.deleteAllBills()
                 incomeDao.deleteAllOverrides()
@@ -493,6 +523,26 @@ class CashFlowRepositoryImpl(
                 // Import bill payments
                 exportData.billPayments.forEach { payment ->
                     billPaymentDao.insertPayment(payment.toEntity())
+                }
+                
+                // Import envelopes
+                exportData.envelopes.forEach { envelope ->
+                    envelopeDao.insertEnvelope(envelope.toEntity())
+                }
+                
+                // Import envelope allocations
+                exportData.envelopeAllocations.forEach { allocation ->
+                    envelopeAllocationDao.insertAllocation(allocation.toEntity())
+                }
+                
+                // Import envelope transfers
+                exportData.envelopeTransfers.forEach { transfer ->
+                    envelopeTransferDao.insertTransfer(transfer.toEntity())
+                }
+                
+                // Import categorization rules
+                exportData.categorizationRules.forEach { rule ->
+                    categorizationRuleDao.insertRule(rule.toEntity())
                 }
                 
                 Result.success(Unit)
@@ -657,15 +707,387 @@ class CashFlowRepositoryImpl(
     private fun Bill.toEntity() = BillEntity(id, name, amount, recurrenceType, startDate, endDate, null, isActive, reminderDaysBefore)
 
     private fun TransactionEntity.toDomain() = Transaction(
-        id, accountId, toAccountId, type, amount, date, timestamp, description, relatedBillId, relatedIncomeId
+        id, accountId, toAccountId, type, amount, date, timestamp, description, relatedBillId, relatedIncomeId, envelopeId
     )
 
     private fun Transaction.toEntity() = TransactionEntity(
-        id, accountId, toAccountId, type, amount, date, timestamp, description, relatedBillId, relatedIncomeId
+        id, accountId, toAccountId, type, amount, date, timestamp, description, relatedBillId, relatedIncomeId, envelopeId
     )
 
     private fun BillPaymentEntity.toDomain() = BillPayment(
         id, billId, accountId, paymentDate, amount, timestamp, transactionId
     )
+
+    // Envelope conversions
+    private fun EnvelopeEntity.toDomain() = Envelope(
+        id, name, 
+        androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(color)), 
+        icon, budgetedAmount, periodType, accountId, carryOverEnabled, isActive,
+        createdAt.toInstant(TimeZone.currentSystemDefault())
+    )
+
+    private fun Envelope.toEntity(createdAt: LocalDateTime) = EnvelopeEntity(
+        id, name, 
+        String.format("#%08X", color.value.toLong() and 0xFFFFFFFF), 
+        icon, budgetedAmount, periodType, accountId, carryOverEnabled, createdAt, isActive
+    )
+
+    private fun EnvelopeAllocationEntity.toDomain() = EnvelopeAllocation(
+        id, envelopeId, amount, periodStart, periodEnd, incomeId,
+        createdAt.toInstant(TimeZone.currentSystemDefault())
+    )
+
+    private fun EnvelopeAllocation.toEntity(createdAt: LocalDateTime) = EnvelopeAllocationEntity(
+        id, envelopeId, amount, periodStart, periodEnd, incomeId, createdAt
+    )
+
+    private fun EnvelopeTransferEntity.toDomain() = EnvelopeTransfer(
+        id, fromEnvelopeId, toEnvelopeId, amount, date, description, timestamp
+    )
+
+    private fun EnvelopeTransfer.toEntity() = EnvelopeTransferEntity(
+        id, fromEnvelopeId, toEnvelopeId, amount, date, description, timestamp
+    )
+
+    private fun CategorizationRuleEntity.toDomain() = CategorizationRule(
+        id, envelopeId, keyword, isActive
+    )
+
+    private fun CategorizationRule.toEntity(createdAt: LocalDateTime) = CategorizationRuleEntity(
+        id, envelopeId, keyword, isActive, createdAt
+    )
+
+    // Envelope methods
+    override fun getAllActiveEnvelopes(): Flow<List<Envelope>> =
+        envelopeDao.getAllActiveEnvelopes().map { entities -> entities.map { it.toDomain() } }
+
+    override fun getAllEnvelopes(): Flow<List<Envelope>> =
+        envelopeDao.getAllEnvelopes().map { entities -> entities.map { it.toDomain() } }
+
+    override suspend fun getEnvelopeById(id: Long): Envelope? =
+        envelopeDao.getEnvelopeById(id)?.toDomain()
+
+    override suspend fun insertEnvelope(envelope: Envelope): Long {
+        val now = Clock.System.now()
+        val timestamp = now.toLocalDateTime(TimeZone.currentSystemDefault())
+        return envelopeDao.insertEnvelope(envelope.toEntity(timestamp))
+    }
+
+    override suspend fun updateEnvelope(envelope: Envelope) {
+        val existing = envelopeDao.getEnvelopeById(envelope.id)
+        if (existing != null) {
+            envelopeDao.updateEnvelope(envelope.toEntity(existing.createdAt))
+        } else {
+            val now = Clock.System.now()
+            val timestamp = now.toLocalDateTime(TimeZone.currentSystemDefault())
+            envelopeDao.updateEnvelope(envelope.toEntity(timestamp))
+        }
+    }
+
+    override suspend fun deleteEnvelope(envelope: Envelope) {
+        val existing = envelopeDao.getEnvelopeById(envelope.id)
+        existing?.let { envelopeDao.deleteEnvelope(it) }
+    }
+
+    // Envelope Allocation methods
+    override fun getAllocationsForEnvelope(envelopeId: Long): Flow<List<EnvelopeAllocation>> =
+        envelopeAllocationDao.getAllocationsForEnvelope(envelopeId).map { entities -> entities.map { it.toDomain() } }
+
+    override suspend fun getAllocationForPeriod(envelopeId: Long, date: LocalDate): EnvelopeAllocation? =
+        envelopeAllocationDao.getAllocationForPeriod(envelopeId, date)?.toDomain()
+
+    override suspend fun insertAllocation(allocation: EnvelopeAllocation): Long {
+        val now = Clock.System.now()
+        val timestamp = now.toLocalDateTime(TimeZone.currentSystemDefault())
+        return envelopeAllocationDao.insertAllocation(allocation.toEntity(timestamp))
+    }
+
+    override suspend fun updateAllocation(allocation: EnvelopeAllocation) {
+        val existing = envelopeAllocationDao.getAllocationById(allocation.id)
+        if (existing != null) {
+            envelopeAllocationDao.updateAllocation(allocation.toEntity(existing.createdAt))
+        } else {
+            val now = Clock.System.now()
+            val timestamp = now.toLocalDateTime(TimeZone.currentSystemDefault())
+            envelopeAllocationDao.updateAllocation(allocation.toEntity(timestamp))
+        }
+    }
+
+    override suspend fun deleteAllocation(allocation: EnvelopeAllocation) {
+        val existing = envelopeAllocationDao.getAllocationById(allocation.id)
+        existing?.let { envelopeAllocationDao.deleteAllocation(it) }
+    }
+
+    // Envelope Balance Calculation
+    override suspend fun getEnvelopeBalance(envelopeId: Long, date: LocalDate): Double {
+        val allocations = envelopeAllocationDao.getAllocationsInRange(envelopeId, LocalDate(2000, 1, 1), date).first()
+        val totalAllocated = allocations.sumOf { it.amount }
+
+        val transactions = transactionDao.getTransactionsBetween(LocalDate(2000, 1, 1), date).first()
+        val envelopeTransactions = transactions.filter { it.envelopeId == envelopeId }
+        val totalSpent = envelopeTransactions.sumOf {
+            when (it.type) {
+                TransactionType.BILL_PAYMENT, TransactionType.CREDIT_CARD_PAYMENT -> it.amount
+                else -> 0.0
+            }
+        }
+
+        return totalAllocated - totalSpent
+    }
+
+    override fun getEnvelopeTransactions(envelopeId: Long): Flow<List<Transaction>> =
+        transactionDao.getAllTransactions().map { entities ->
+            entities.filter { it.envelopeId == envelopeId }
+                .map { it.toDomain() }
+        }
+
+    // Period Management
+    override suspend fun resetEnvelopePeriod(envelopeId: Long, newPeriodStart: LocalDate, carryOverAmount: Double) {
+        // Period reset logic - can be implemented later if needed
+    }
+
+    override suspend fun getEnvelopeHistory(envelopeId: Long, startDate: LocalDate, endDate: LocalDate): List<EnvelopePeriodHistory> {
+        val allocations = envelopeAllocationDao.getAllocationsInRange(envelopeId, startDate, endDate).first()
+        val transactions = transactionDao.getTransactionsBetween(startDate, endDate).first()
+            .filter { it.envelopeId == envelopeId }
+
+        val history = mutableListOf<EnvelopePeriodHistory>()
+
+        for (allocation in allocations.sortedBy { it.periodStart }) {
+            val periodTransactions = transactions.filter {
+                it.date >= allocation.periodStart && it.date <= allocation.periodEnd
+            }
+
+            val spent = periodTransactions.sumOf {
+                when (it.type) {
+                    TransactionType.BILL_PAYMENT, TransactionType.CREDIT_CARD_PAYMENT -> it.amount
+                    else -> 0.0
+                }
+            }
+
+            val balance = allocation.amount - spent
+
+            history.add(
+                EnvelopePeriodHistory(
+                    periodStart = allocation.periodStart,
+                    periodEnd = allocation.periodEnd,
+                    allocated = allocation.amount,
+                    spent = spent,
+                    balance = balance,
+                    carriedOver = 0.0
+                )
+            )
+        }
+
+        // Calculate carry-over amounts if enabled
+        val envelope = envelopeDao.getEnvelopeById(envelopeId)
+        if (envelope != null && envelope.carryOverEnabled) {
+            for (i in 0 until history.size - 1) {
+                val currentPeriod = history[i]
+                val nextPeriod = history[i + 1]
+                if (currentPeriod.balance > 0) {
+                    history[i + 1] = nextPeriod.copy(carriedOver = currentPeriod.balance)
+                }
+            }
+        }
+
+        return history
+    }
+
+    // Envelope Transfers
+    override fun getEnvelopeTransfers(envelopeId: Long): Flow<List<EnvelopeTransfer>> =
+        envelopeTransferDao.getTransfersForEnvelope(envelopeId).map { entities ->
+            entities.map { it.toDomain() }
+        }
+
+    override suspend fun transferBetweenEnvelopes(
+        fromEnvelopeId: Long,
+        toEnvelopeId: Long,
+        amount: Double,
+        date: LocalDate,
+        description: String?
+    ): Long {
+        val now = Clock.System.now()
+        val timestamp = now.toLocalDateTime(TimeZone.currentSystemDefault())
+
+        val fromAllocation = getAllocationForPeriod(fromEnvelopeId, date)
+        val toAllocation = getAllocationForPeriod(toEnvelopeId, date)
+
+        val transfer = EnvelopeTransfer(
+            id = 0,
+            fromEnvelopeId = fromEnvelopeId,
+            toEnvelopeId = toEnvelopeId,
+            amount = amount,
+            date = date,
+            description = description,
+            timestamp = timestamp
+        )
+
+        val transferId = envelopeTransferDao.insertTransfer(transfer.toEntity())
+
+        // Adjust allocations
+        val fromAllocationEntity = fromAllocation?.let {
+            envelopeAllocationDao.getAllocationById(it.id)
+        }
+        val toAllocationEntity = toAllocation?.let {
+            envelopeAllocationDao.getAllocationById(it.id)
+        }
+
+        if (fromAllocationEntity != null) {
+            val updated = fromAllocationEntity.copy(amount = fromAllocationEntity.amount - amount)
+            envelopeAllocationDao.updateAllocation(updated)
+        }
+
+        if (toAllocationEntity != null) {
+            val updated = toAllocationEntity.copy(amount = toAllocationEntity.amount + amount)
+            envelopeAllocationDao.updateAllocation(updated)
+        } else {
+            val toEnvelope = envelopeDao.getEnvelopeById(toEnvelopeId)
+            val (periodStart, periodEnd) = calculatePeriodDates(date, toEnvelope?.periodType ?: RecurrenceType.MONTHLY)
+            val timeZone = TimeZone.currentSystemDefault()
+            val now = Clock.System.now()
+            val newAllocation = EnvelopeAllocation(
+                id = 0,
+                envelopeId = toEnvelopeId,
+                amount = amount,
+                periodStart = periodStart,
+                periodEnd = periodEnd,
+                incomeId = null,
+                createdAt = now
+            )
+            insertAllocation(newAllocation)
+        }
+
+        return transferId
+    }
+
+    private fun calculatePeriodDates(date: LocalDate, periodType: RecurrenceType): Pair<LocalDate, LocalDate> {
+        return when (periodType) {
+            RecurrenceType.MONTHLY -> {
+                val start = LocalDate(date.year, date.monthNumber, 1)
+                val end = if (date.monthNumber == 12) {
+                    LocalDate(date.year + 1, 1, 1).let { LocalDate.fromEpochDays(it.toEpochDays() - 1) }
+                } else {
+                    LocalDate(date.year, date.monthNumber + 1, 1).let { LocalDate.fromEpochDays(it.toEpochDays() - 1) }
+                }
+                Pair(start, end)
+            }
+            RecurrenceType.BI_WEEKLY -> {
+                val start = date
+                val end = LocalDate.fromEpochDays(date.toEpochDays() + 13)
+                Pair(start, end)
+            }
+            RecurrenceType.WEEKLY -> {
+                val start = date
+                val end = LocalDate.fromEpochDays(date.toEpochDays() + 6)
+                Pair(start, end)
+            }
+            else -> {
+                val start = LocalDate(date.year, date.monthNumber, 1)
+                val end = if (date.monthNumber == 12) {
+                    LocalDate(date.year + 1, 1, 1).let { LocalDate.fromEpochDays(it.toEpochDays() - 1) }
+                } else {
+                    LocalDate(date.year, date.monthNumber + 1, 1).let { LocalDate.fromEpochDays(it.toEpochDays() - 1) }
+                }
+                Pair(start, end)
+            }
+        }
+    }
+
+    override suspend fun deleteTransfer(transfer: EnvelopeTransfer) {
+        val existing = envelopeTransferDao.getTransferById(transfer.id)
+        existing?.let { envelopeTransferDao.deleteTransfer(it) }
+    }
+
+    // Auto-Categorization Rules
+    override fun getAllCategorizationRules(): Flow<List<CategorizationRule>> =
+        categorizationRuleDao.getAllActiveRules().map { entities ->
+            entities.map { it.toDomain() }
+        }
+
+    override fun getRulesForEnvelope(envelopeId: Long): Flow<List<CategorizationRule>> =
+        categorizationRuleDao.getRulesForEnvelope(envelopeId).map { entities ->
+            entities.map { it.toDomain() }
+        }
+
+    override suspend fun insertCategorizationRule(rule: CategorizationRule): Long {
+        val now = Clock.System.now()
+        val timestamp = now.toLocalDateTime(TimeZone.currentSystemDefault())
+        return categorizationRuleDao.insertRule(rule.toEntity(timestamp))
+    }
+
+    override suspend fun updateCategorizationRule(rule: CategorizationRule) {
+        val existing = categorizationRuleDao.getRuleById(rule.id)
+        if (existing != null) {
+            categorizationRuleDao.updateRule(rule.toEntity(existing.createdAt))
+        } else {
+            val now = Clock.System.now()
+            val timestamp = now.toLocalDateTime(TimeZone.currentSystemDefault())
+            categorizationRuleDao.updateRule(rule.toEntity(timestamp))
+        }
+    }
+
+    override suspend fun deleteCategorizationRule(rule: CategorizationRule) {
+        val existing = categorizationRuleDao.getRuleById(rule.id)
+        existing?.let { categorizationRuleDao.deleteRule(it) }
+    }
+
+    override suspend fun applyAutoCategorization(transaction: Transaction): Long? {
+        val rules = categorizationRuleDao.getAllActiveRules().first()
+        val matchingRule = rules.find { rule ->
+            transaction.description.contains(rule.keyword, ignoreCase = true)
+        }
+        return matchingRule?.envelopeId
+    }
+
+    // Analytics
+    override suspend fun getEnvelopeSpendingTrend(envelopeId: Long, months: Int): List<MonthlySpending> {
+        val timeZone = TimeZone.currentSystemDefault()
+        val today = Clock.System.now().toLocalDateTime(timeZone).date
+        val startDate = LocalDate(today.year, today.monthNumber, 1)
+        val monthsAgo = startDate.let {
+            var date = it
+            repeat(months) {
+                date = if (date.monthNumber == 1) {
+                    LocalDate(date.year - 1, 12, 1)
+                } else {
+                    LocalDate(date.year, date.monthNumber - 1, 1)
+                }
+            }
+            date
+        }
+
+        val transactions = transactionDao.getTransactionsBetween(monthsAgo, today).first()
+            .filter { it.envelopeId == envelopeId }
+
+        val monthlyMap = mutableMapOf<String, Double>()
+        transactions.forEach { transaction ->
+            val monthKey = "${transaction.date.year}-${transaction.date.monthNumber.toString().padStart(2, '0')}"
+            val amount = when (transaction.type) {
+                TransactionType.BILL_PAYMENT, TransactionType.CREDIT_CARD_PAYMENT -> transaction.amount
+                else -> 0.0
+            }
+            monthlyMap[monthKey] = (monthlyMap[monthKey] ?: 0.0) + amount
+        }
+
+        return monthlyMap.map { (month, amount) ->
+            MonthlySpending(month, amount)
+        }.sortedBy { it.month }
+    }
+
+    override suspend fun getTotalSpendingByEnvelope(startDate: LocalDate, endDate: LocalDate): Map<Long, Double> {
+        val transactions = transactionDao.getTransactionsBetween(startDate, endDate).first()
+            .filter { it.envelopeId != null }
+
+        return transactions.groupBy { it.envelopeId!! }
+            .mapValues { (_, trans) ->
+                trans.sumOf {
+                    when (it.type) {
+                        TransactionType.BILL_PAYMENT, TransactionType.CREDIT_CARD_PAYMENT -> it.amount
+                        else -> 0.0
+                    }
+                }
+            }
+    }
 }
 
