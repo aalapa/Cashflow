@@ -526,22 +526,57 @@ class CashFlowRepositoryImpl(
             overrides.associate { it.date to it.amount }
         }
 
-        // Calculate starting balance: use current account balances, but EXCLUDE
-        // transactions in our date range (since we'll process them below)
-        var currentBalance = accounts.sumOf { it.currentBalance }
+        // Calculate starting balance at startDate.
+        // If startDate is today or in the future, use currentBalance as the starting point
+        // (it already includes all transactions, including future-dated ones from marking bills as paid).
+        // If startDate is in the past, calculate from startingBalance + transactions before startDate.
+        val timeZone = TimeZone.currentSystemDefault()
+        val today = Clock.System.now().toLocalDateTime(timeZone).date
         
-        // Subtract transactions in our date range from the starting balance
-        // since they're already included in currentBalance but we'll add them back below
-        for (transaction in transactionList) {
-            if (transaction.date >= startDate) {
+        var currentBalance = if (startDate >= today) {
+            // For today or future dates, use currentBalance as starting point
+            // Only reverse transactions from startDate to today (not future ones)
+            // because currentBalance already includes future transactions from marking bills as paid
+            val allTransactions = transactionDao.getAllTransactions().first().map { it.toDomain() }
+            // Only reverse transactions that are strictly before startDate (if startDate > today)
+            // or transactions on startDate if startDate == today (to get balance at start of day)
+            val transactionsToReverse = if (startDate > today) {
+                // If startDate is in the future, reverse transactions from startDate to today
+                allTransactions.filter { it.date >= startDate && it.date <= today }
+            } else {
+                // If startDate is today, reverse transactions on today to get balance at start of today
+                allTransactions.filter { it.date == today }
+            }
+            
+            var balance = accounts.sumOf { it.currentBalance }
+            // Reverse only transactions from startDate to today (not future ones)
+            for (transaction in transactionsToReverse) {
                 when (transaction.type) {
-                    com.cashflow.app.data.model.TransactionType.INCOME -> currentBalance -= transaction.amount
+                    com.cashflow.app.data.model.TransactionType.INCOME -> balance -= transaction.amount
                     com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
-                    com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> currentBalance += transaction.amount
-                    com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> currentBalance -= transaction.amount
+                    com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> balance += transaction.amount
+                    com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> balance -= transaction.amount
                     com.cashflow.app.data.model.TransactionType.TRANSFER -> { /* No change to total */ }
                 }
             }
+            balance
+        } else {
+            // For past dates, calculate from startingBalance
+            val allTransactions = transactionDao.getAllTransactions().first().map { it.toDomain() }
+            val transactionsBeforeStart = allTransactions.filter { it.date < startDate }
+            
+            var balance = accounts.sumOf { it.startingBalance }
+            // Apply transactions before startDate
+            for (transaction in transactionsBeforeStart) {
+                when (transaction.type) {
+                    com.cashflow.app.data.model.TransactionType.INCOME -> balance += transaction.amount
+                    com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
+                    com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> balance -= transaction.amount
+                    com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> balance += transaction.amount
+                    com.cashflow.app.data.model.TransactionType.TRANSFER -> { /* No change to total */ }
+                }
+            }
+            balance
         }
 
         val cashFlowDays = mutableListOf<CashFlowDay>()
@@ -585,23 +620,32 @@ class CashFlowRepositoryImpl(
             }
 
             // Process transactions
+            // Note: For future dates (after today), transactions are already reflected in currentBalance
+            // because when bills are marked as paid, the balance is updated immediately.
+            // So we only process transactions on or before today to avoid double-counting.
             for (transaction in transactionList) {
                 if (transaction.date == currentDate) {
                     dayTransactions.add(transaction)
-                    when (transaction.type) {
-                        com.cashflow.app.data.model.TransactionType.INCOME -> currentBalance += transaction.amount
-                        com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
-                        com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> currentBalance -= transaction.amount
-                        com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> {
-                            // Manual adjustments can be positive or negative
-                            // For simplicity, we'll treat amount as the change
-                            currentBalance += transaction.amount
-                        }
-                        com.cashflow.app.data.model.TransactionType.TRANSFER -> {
-                            // Transfers don't affect total cash balance (just move money between accounts)
-                            // No change to currentBalance
+                    // Only process transactions that are on or before today
+                    // Future transactions are already in currentBalance, so we skip processing them
+                    if (currentDate <= today) {
+                        when (transaction.type) {
+                            com.cashflow.app.data.model.TransactionType.INCOME -> currentBalance += transaction.amount
+                            com.cashflow.app.data.model.TransactionType.BILL_PAYMENT,
+                            com.cashflow.app.data.model.TransactionType.CREDIT_CARD_PAYMENT -> currentBalance -= transaction.amount
+                            com.cashflow.app.data.model.TransactionType.MANUAL_ADJUSTMENT -> {
+                                // Manual adjustments can be positive or negative
+                                // For simplicity, we'll treat amount as the change
+                                currentBalance += transaction.amount
+                            }
+                            com.cashflow.app.data.model.TransactionType.TRANSFER -> {
+                                // Transfers don't affect total cash balance (just move money between accounts)
+                                // No change to currentBalance
+                            }
                         }
                     }
+                    // For future dates, the transaction is already reflected in currentBalance,
+                    // so we don't process it again (it's just shown in the dayTransactions list for display)
                 }
             }
 
