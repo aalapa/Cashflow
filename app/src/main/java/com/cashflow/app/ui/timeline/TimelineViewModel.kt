@@ -164,12 +164,14 @@ class TimelineViewModel(
             
             val timeZone = TimeZone.currentSystemDefault()
             val today = Clock.System.now().toLocalDateTime(timeZone).date
+            // Include 30 days in the past so users can see historical balances
+            val pastDays = 30
             val (startDate, endDate) = when (currentState.selectedTimePeriod) {
-                TimePeriod.DAYS_30 -> today to LocalDate.fromEpochDays(today.toEpochDays() + 29)
-                TimePeriod.DAYS_60 -> today to LocalDate.fromEpochDays(today.toEpochDays() + 59)
-                TimePeriod.DAYS_90 -> today to LocalDate.fromEpochDays(today.toEpochDays() + 89)
-                TimePeriod.DAYS_180 -> today to LocalDate.fromEpochDays(today.toEpochDays() + 179)
-                TimePeriod.DAYS_360 -> today to LocalDate.fromEpochDays(today.toEpochDays() + 359)
+                TimePeriod.DAYS_30 -> LocalDate.fromEpochDays(today.toEpochDays() - pastDays) to LocalDate.fromEpochDays(today.toEpochDays() + 29)
+                TimePeriod.DAYS_60 -> LocalDate.fromEpochDays(today.toEpochDays() - pastDays) to LocalDate.fromEpochDays(today.toEpochDays() + 59)
+                TimePeriod.DAYS_90 -> LocalDate.fromEpochDays(today.toEpochDays() - pastDays) to LocalDate.fromEpochDays(today.toEpochDays() + 89)
+                TimePeriod.DAYS_180 -> LocalDate.fromEpochDays(today.toEpochDays() - pastDays) to LocalDate.fromEpochDays(today.toEpochDays() + 179)
+                TimePeriod.DAYS_360 -> LocalDate.fromEpochDays(today.toEpochDays() - pastDays) to LocalDate.fromEpochDays(today.toEpochDays() + 359)
             }
 
             val cashFlowDays = repository.calculateCashFlow(startDate, endDate, accounts)

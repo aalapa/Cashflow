@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cashflow.app.domain.repository.CashFlowRepository
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 @Composable
 fun TimelineScreen(repository: CashFlowRepository) {
@@ -159,7 +162,8 @@ fun TimelineScreen(repository: CashFlowRepository) {
             // Calendar content - group by month and display
             val daysByMonth = state.cashFlowDays.groupBy { 
                 "${it.date.year}-${it.date.monthNumber.toString().padStart(2, '0')}"
-            }
+            }.toSortedMap() // Sort months chronologically
+            
             daysByMonth.forEach { (monthKey, days) ->
                 item {
                     CalendarMonthView(
@@ -556,16 +560,42 @@ fun CalendarMonthView(
                     ) {
                         if (dayNum != null) {
                             val dayData = daysMap[dayNum]
+                            val dayDate = kotlinx.datetime.LocalDate(year, month, dayNum)
+                            val timeZone = kotlinx.datetime.TimeZone.currentSystemDefault()
+                            val today = kotlinx.datetime.Clock.System.now().toLocalDateTime(timeZone).date
+                            val isPastDate = dayDate < today
+                            
                             if (dayData != null) {
+                                // Day has data - show it with balance
                                 CalendarDayCell(
                                     day = dayNum,
                                     balance = dayData.balance,
                                     isNegative = dayData.isNegative,
                                     isWarning = dayData.isWarning,
                                     hasUnpaidBills = dayData.bills.isNotEmpty(),
+                                    isPastDate = isPastDate,
                                     onClick = { onDayClick(dayData) }
                                 )
+                            } else if (isPastDate) {
+                                // Past day without data - show it grayed out but still clickable
+                                // Create a placeholder CashFlowDay for display
+                                val placeholderDay = com.cashflow.app.domain.model.CashFlowDay(
+                                    date = dayDate,
+                                    balance = 0.0,
+                                    isNegative = false,
+                                    isWarning = false
+                                )
+                                CalendarDayCell(
+                                    day = dayNum,
+                                    balance = 0.0,
+                                    isNegative = false,
+                                    isWarning = false,
+                                    hasUnpaidBills = false,
+                                    isPastDate = true,
+                                    onClick = { onDayClick(placeholderDay) }
+                                )
                             }
+                            // Future days without data are not shown (they'll be calculated when we get there)
                         }
                     }
                 }
@@ -581,12 +611,14 @@ fun CalendarDayCell(
     isNegative: Boolean,
     isWarning: Boolean,
     hasUnpaidBills: Boolean,
+    isPastDate: Boolean = false,
     onClick: () -> Unit = {}
 ) {
     // If there are unpaid bills and balance is positive, use light green background with red text
     val hasUnpaidBillsAndPositive = hasUnpaidBills && balance > 0 && !isNegative && !isWarning
     
     val backgroundColor = when {
+        isPastDate -> Color(0xFF9E9E9E).copy(alpha = 0.3f) // Gray for past dates
         isNegative -> Color(0xFFEF4444) // Red
         isWarning -> Color(0xFFFFB020) // Amber
         hasUnpaidBillsAndPositive -> Color(0xFF10B981).copy(alpha = 0.3f) // Light green
@@ -595,6 +627,7 @@ fun CalendarDayCell(
     }
 
     val textColor = when {
+        isPastDate -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) // Gray text for past dates
         hasUnpaidBillsAndPositive -> Color(0xFFEF4444) // Red text for unpaid bills
         isNegative || isWarning || balance > 0 -> Color.White
         else -> MaterialTheme.colorScheme.onSurface
