@@ -1,16 +1,16 @@
 package com.cashflow.app.ui.envelopes
 
-import com.cashflow.app.domain.model.Envelope
-import com.cashflow.app.domain.repository.EnvelopePeriodHistory
+import com.cashflow.app.domain.model.BudgetCategory
+import com.cashflow.app.domain.repository.CategoryPeriodHistory
 
 data class EnvelopeHistoryState(
-    val envelope: Envelope? = null,
-    val history: List<EnvelopePeriodHistory> = emptyList(),
+    val category: BudgetCategory? = null,
+    val history: List<CategoryPeriodHistory> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
 
 sealed class EnvelopeHistoryIntent {
-    data class LoadHistory(val envelopeId: Long) : EnvelopeHistoryIntent()
+    data class LoadHistory(val categoryId: Long) : EnvelopeHistoryIntent()
 }
 

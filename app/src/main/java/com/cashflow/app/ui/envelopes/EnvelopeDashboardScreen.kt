@@ -23,7 +23,7 @@ import kotlinx.datetime.toLocalDateTime
 fun EnvelopeDashboardScreen(
     repository: CashFlowRepository,
     onNavigateBack: () -> Unit = {},
-    onNavigateToHistory: (com.cashflow.app.domain.model.Envelope) -> Unit = {}
+    onNavigateToHistory: (com.cashflow.app.domain.model.BudgetCategory) -> Unit = {}
 ) {
     val viewModel: EnvelopeDashboardViewModel = viewModel { EnvelopeDashboardViewModel(repository) }
     val state by viewModel.state.collectAsState()
@@ -121,17 +121,17 @@ fun EnvelopeDashboardScreen(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Envelope List
+                // Category List
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
-                    items(state.envelopes) { envelope ->
-                        val balance = state.balances[envelope.id]
+                    items(state.categories) { category ->
+                        val balance = state.balances[category.id]
                         if (balance != null) {
                             EnvelopeBalanceCard(
                                 balance = balance,
-                                onViewHistory = { onNavigateToHistory(envelope) }
+                                onViewHistory = { onNavigateToHistory(category) }
                             )
                         }
                     }
@@ -146,7 +146,7 @@ fun EnvelopeBalanceCard(
     balance: EnvelopeBalance,
     onViewHistory: () -> Unit = {}
 ) {
-    val envelope = balance.envelope
+    val category = balance.category
     val isOverBudget = balance.balance < 0
     val isLow = balance.balance >= 0 && balance.balance < (balance.allocated * 0.2)
     val progress = if (balance.allocated > 0) {
@@ -178,15 +178,15 @@ fun EnvelopeBalanceCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = getIconForString(envelope.icon ?: "Folder"),
+                        imageVector = getIconForString(category.icon ?: "Folder"),
                         contentDescription = null,
-                        tint = envelope.color,
+                        tint = category.color,
                         modifier = Modifier.size(32.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = envelope.name,
+                            text = category.name,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )

@@ -27,41 +27,41 @@ class EnvelopeDashboardViewModel(
                 viewModelScope.launch {
                     _state.update { it.copy(isLoading = true) }
                     
-                    repository.getAllActiveEnvelopes()
+                    repository.getAllActiveCategories()
                         .catch { e ->
                             _state.update { it.copy(error = e.message, isLoading = false) }
                         }
-                        .collect { envelopes ->
-                            loadBalances(envelopes, _state.value.selectedDate)
+                        .collect { categories ->
+                            loadBalances(categories, _state.value.selectedDate)
                         }
                 }
             }
             is EnvelopeDashboardIntent.SetDate -> {
                 viewModelScope.launch {
-                    val currentEnvelopes = _state.value.envelopes
-                    loadBalances(currentEnvelopes, intent.date)
+                    val currentCategories = _state.value.categories
+                    loadBalances(currentCategories, intent.date)
                 }
             }
         }
     }
     
-    private suspend fun loadBalances(envelopes: List<com.cashflow.app.domain.model.Envelope>, date: LocalDate) {
+    private suspend fun loadBalances(categories: List<com.cashflow.app.domain.model.BudgetCategory>, date: LocalDate) {
         val balancesMap = mutableMapOf<Long, EnvelopeBalance>()
         
-        for (envelope in envelopes) {
+        for (category in categories) {
             // Get allocation for current period
-            val allocation = repository.getAllocationForPeriod(envelope.id, date)
+            val allocation = repository.getAllocationForPeriod(category.id, date)
             val allocated = allocation?.amount ?: 0.0
             
             // Use allocation period if available, otherwise calculate from date
             val (periodStart, periodEnd) = if (allocation != null) {
                 Pair(allocation.periodStart, allocation.periodEnd)
             } else {
-                calculatePeriodDates(date, envelope.periodType)
+                calculatePeriodDates(date, category.periodType)
             }
             
-            // Get transactions for this envelope within the period
-            val transactions = repository.getEnvelopeTransactions(envelope.id).first()
+            // Get transactions for this category within the period
+            val transactions = repository.getCategoryTransactions(category.id).first()
             val periodTransactions = transactions.filter { 
                 it.date >= periodStart && it.date <= periodEnd && it.date <= date
             }
@@ -74,18 +74,18 @@ class EnvelopeDashboardViewModel(
                 }
             }
             
-            // Get transfers for this envelope within the period
-            val transfers = repository.getEnvelopeTransfers(envelope.id).first()
+            // Get transfers for this category within the period
+            val transfers = repository.getCategoryTransfers(category.id).first()
                 .filter { it.date >= periodStart && it.date <= periodEnd && it.date <= date }
             
-            val transferOut = transfers.filter { it.fromEnvelopeId == envelope.id }.sumOf { it.amount }
-            val transferIn = transfers.filter { it.toEnvelopeId == envelope.id }.sumOf { it.amount }
+            val transferOut = transfers.filter { it.fromCategoryId == category.id }.sumOf { it.amount }
+            val transferIn = transfers.filter { it.toCategoryId == category.id }.sumOf { it.amount }
             
             // Balance = allocated + transfers in - spent - transfers out
             val balance = allocated + transferIn - spent - transferOut
             
-            balancesMap[envelope.id] = EnvelopeBalance(
-                envelope = envelope,
+            balancesMap[category.id] = EnvelopeBalance(
+                category = category,
                 allocated = allocated,
                 spent = spent,
                 balance = balance,
@@ -96,7 +96,7 @@ class EnvelopeDashboardViewModel(
         
         _state.update {
             it.copy(
-                envelopes = envelopes,
+                categories = categories,
                 balances = balancesMap,
                 isLoading = false
             )

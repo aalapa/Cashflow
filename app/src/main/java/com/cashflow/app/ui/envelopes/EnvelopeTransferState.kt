@@ -1,11 +1,11 @@
 package com.cashflow.app.ui.envelopes
 
-import com.cashflow.app.domain.model.Envelope
+import com.cashflow.app.domain.model.BudgetCategory
 
 data class EnvelopeTransferState(
-    val envelopes: List<Envelope> = emptyList(),
-    val fromEnvelopeId: Long? = null,
-    val toEnvelopeId: Long? = null,
+    val categories: List<BudgetCategory> = emptyList(),
+    val fromCategoryId: Long? = null,
+    val toCategoryId: Long? = null,
     val amount: String = "",
     val description: String = "",
     val isLoading: Boolean = false,
@@ -13,9 +13,9 @@ data class EnvelopeTransferState(
 )
 
 sealed class EnvelopeTransferIntent {
-    object LoadEnvelopes : EnvelopeTransferIntent()
-    data class SetFromEnvelope(val envelopeId: Long) : EnvelopeTransferIntent()
-    data class SetToEnvelope(val envelopeId: Long) : EnvelopeTransferIntent()
+    object LoadCategories : EnvelopeTransferIntent()
+    data class SetFromCategory(val categoryId: Long) : EnvelopeTransferIntent()
+    data class SetToCategory(val categoryId: Long) : EnvelopeTransferIntent()
     data class SetAmount(val amount: String) : EnvelopeTransferIntent()
     data class SetDescription(val description: String) : EnvelopeTransferIntent()
     object SaveTransfer : EnvelopeTransferIntent()

@@ -9,9 +9,9 @@ import kotlinx.datetime.LocalDateTime
     tableName = "categorization_rules",
     foreignKeys = [
         ForeignKey(
-            entity = EnvelopeEntity::class,
+            entity = BudgetCategoryEntity::class,
             parentColumns = ["id"],
-            childColumns = ["envelopeId"],
+            childColumns = ["categoryId"],
             onDelete = ForeignKey.CASCADE
         )
     ]
@@ -19,7 +19,7 @@ import kotlinx.datetime.LocalDateTime
 data class CategorizationRuleEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val envelopeId: Long,
+    val categoryId: Long,
     val keyword: String, // Transaction description must contain this keyword
     val isActive: Boolean = true,
     val createdAt: LocalDateTime

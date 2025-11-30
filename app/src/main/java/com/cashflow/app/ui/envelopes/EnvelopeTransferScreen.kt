@@ -51,19 +51,19 @@ fun EnvelopeTransferScreen(
                     CircularProgressIndicator()
                 }
             } else {
-                // From Envelope
+                // From Category
                 var fromExpanded by remember { mutableStateOf(false) }
-                val selectedFrom = state.envelopes.find { it.id == state.fromEnvelopeId }
+                val selectedFrom = state.categories.find { it.id == state.fromCategoryId }
                 
                 ExposedDropdownMenuBox(
                     expanded = fromExpanded,
                     onExpandedChange = { fromExpanded = !fromExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedFrom?.name ?: "Select Source Envelope",
+                        value = selectedFrom?.name ?: "Select Source Category",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("From Envelope") },
+                        label = { Text("From Category") },
                         leadingIcon = {
                             selectedFrom?.let {
                                 Icon(
@@ -83,18 +83,18 @@ fun EnvelopeTransferScreen(
                         expanded = fromExpanded,
                         onDismissRequest = { fromExpanded = false }
                     ) {
-                        state.envelopes.forEach { envelope ->
+                        state.categories.forEach { category ->
                             DropdownMenuItem(
-                                text = { Text(envelope.name) },
+                                text = { Text(category.name) },
                                 onClick = {
-                                    viewModel.handleIntent(EnvelopeTransferIntent.SetFromEnvelope(envelope.id))
+                                    viewModel.handleIntent(EnvelopeTransferIntent.SetFromCategory(category.id))
                                     fromExpanded = false
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = getIconForString(envelope.icon ?: "Folder"),
+                                        imageVector = getIconForString(category.icon ?: "Folder"),
                                         contentDescription = null,
-                                        tint = envelope.color
+                                        tint = category.color
                                     )
                                 }
                             )
@@ -102,19 +102,19 @@ fun EnvelopeTransferScreen(
                     }
                 }
 
-                // To Envelope
+                // To Category
                 var toExpanded by remember { mutableStateOf(false) }
-                val selectedTo = state.envelopes.find { it.id == state.toEnvelopeId }
+                val selectedTo = state.categories.find { it.id == state.toCategoryId }
                 
                 ExposedDropdownMenuBox(
                     expanded = toExpanded,
                     onExpandedChange = { toExpanded = !toExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedTo?.name ?: "Select Destination Envelope",
+                        value = selectedTo?.name ?: "Select Destination Category",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("To Envelope") },
+                        label = { Text("To Category") },
                         leadingIcon = {
                             selectedTo?.let {
                                 Icon(
@@ -134,18 +134,18 @@ fun EnvelopeTransferScreen(
                         expanded = toExpanded,
                         onDismissRequest = { toExpanded = false }
                     ) {
-                        state.envelopes.filter { it.id != state.fromEnvelopeId }.forEach { envelope ->
+                        state.categories.filter { it.id != state.fromCategoryId }.forEach { category ->
                             DropdownMenuItem(
-                                text = { Text(envelope.name) },
+                                text = { Text(category.name) },
                                 onClick = {
-                                    viewModel.handleIntent(EnvelopeTransferIntent.SetToEnvelope(envelope.id))
+                                    viewModel.handleIntent(EnvelopeTransferIntent.SetToCategory(category.id))
                                     toExpanded = false
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = getIconForString(envelope.icon ?: "Folder"),
+                                        imageVector = getIconForString(category.icon ?: "Folder"),
                                         contentDescription = null,
-                                        tint = envelope.color
+                                        tint = category.color
                                     )
                                 }
                             )
@@ -184,7 +184,7 @@ fun EnvelopeTransferScreen(
                 Button(
                     onClick = { viewModel.handleIntent(EnvelopeTransferIntent.SaveTransfer) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = state.fromEnvelopeId != null && state.toEnvelopeId != null && state.amount.toDoubleOrNull() != null
+                    enabled = state.fromCategoryId != null && state.toCategoryId != null && state.amount.toDoubleOrNull() != null
                 ) {
                     Icon(Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))

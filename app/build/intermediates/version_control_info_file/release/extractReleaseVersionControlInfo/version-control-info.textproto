@@ -1,9 +1,5 @@
 repositories {
   system: GIT
   local_root_path: "$PROJECT_DIR"
-<<<<<<< Updated upstream
-  revision: "0454f35acb8c4b235da386ddb126c408ee591476"
-=======
-  revision: "409e09416cb7f240ad7ce4047811db6d156cf425"
->>>>>>> Stashed changes
+  revision: "f5f15db8d1a0ccc92c9977e076303f62a0c25a2f"
 }

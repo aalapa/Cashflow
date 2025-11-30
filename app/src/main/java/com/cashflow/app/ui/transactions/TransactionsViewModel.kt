@@ -16,7 +16,7 @@ class TransactionsViewModel(
     init {
         handleIntent(TransactionsIntent.LoadTransactions)
         loadAccounts()
-        loadEnvelopes()
+        loadCategories()
     }
 
     private fun loadAccounts() {
@@ -31,14 +31,14 @@ class TransactionsViewModel(
         }
     }
 
-    private fun loadEnvelopes() {
+    private fun loadCategories() {
         viewModelScope.launch {
-            repository.getAllActiveEnvelopes()
+            repository.getAllActiveCategories()
                 .catch { e ->
                     _state.update { it.copy(error = e.message) }
                 }
-                .collect { envelopes ->
-                    _state.update { it.copy(envelopes = envelopes) }
+                .collect { categories ->
+                    _state.update { it.copy(categories = categories) }
                 }
         }
     }
@@ -69,11 +69,11 @@ class TransactionsViewModel(
                 viewModelScope.launch {
                     try {
                         var transaction = intent.transaction
-                        // Apply auto-categorization if no envelope is set
-                        if (transaction.envelopeId == null) {
-                            val envelopeId = repository.applyAutoCategorization(transaction)
-                            if (envelopeId != null) {
-                                transaction = transaction.copy(envelopeId = envelopeId)
+                        // Apply auto-categorization if no category is set
+                        if (transaction.categoryId == null) {
+                            val categoryId = repository.applyAutoCategorization(transaction)
+                            if (categoryId != null) {
+                                transaction = transaction.copy(categoryId = categoryId)
                             }
                         }
                         

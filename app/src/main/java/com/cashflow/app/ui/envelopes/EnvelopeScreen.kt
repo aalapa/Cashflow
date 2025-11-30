@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cashflow.app.data.model.RecurrenceType
-import com.cashflow.app.domain.model.Envelope
+import com.cashflow.app.domain.model.BudgetCategory
 import com.cashflow.app.domain.repository.CashFlowRepository
 import com.cashflow.app.ui.timeline.formatCurrency
 import kotlinx.datetime.Clock
@@ -51,7 +52,7 @@ fun EnvelopeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Envelopes",
+                text = "Budget Categories",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -123,7 +124,7 @@ fun EnvelopeScreen(
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = "Add Envelope",
+                        contentDescription = "Add Category",
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -144,11 +145,11 @@ fun EnvelopeScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
-                items(state.envelopes) { envelope ->
+                items(state.categories) { category ->
                     EnvelopeItem(
-                        envelope = envelope,
-                        onEdit = { viewModel.handleIntent(EnvelopeIntent.EditEnvelope(envelope)) },
-                        onDelete = { viewModel.handleIntent(EnvelopeIntent.DeleteEnvelope(envelope)) }
+                        category = category,
+                        onEdit = { viewModel.handleIntent(EnvelopeIntent.EditCategory(category)) },
+                        onDelete = { viewModel.handleIntent(EnvelopeIntent.DeleteCategory(category)) }
                     )
                 }
             }
@@ -156,10 +157,11 @@ fun EnvelopeScreen(
 
         if (state.showAddDialog) {
             EnvelopeDialog(
-                envelope = state.editingEnvelope,
+                category = state.editingCategory,
+                repository = repository,
                 onDismiss = { viewModel.handleIntent(EnvelopeIntent.HideAddDialog) },
-                onSave = { envelope ->
-                    viewModel.handleIntent(EnvelopeIntent.SaveEnvelope(envelope))
+                onSave = { category ->
+                    viewModel.handleIntent(EnvelopeIntent.SaveCategory(category))
                 },
                 selectedColor = state.selectedColor,
                 onColorSelected = { viewModel.handleIntent(EnvelopeIntent.SetSelectedColor(it)) },
@@ -172,7 +174,7 @@ fun EnvelopeScreen(
 
 @Composable
 fun EnvelopeItem(
-    envelope: Envelope,
+    category: BudgetCategory,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -204,14 +206,14 @@ fun EnvelopeItem(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Icon(
-                        imageVector = getIconForString(envelope.icon ?: "Folder"),
-                        contentDescription = envelope.icon,
-                        tint = envelope.color,
+                        imageVector = getIconForString(category.icon ?: "Folder"),
+                        contentDescription = category.icon,
+                        tint = category.color,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = envelope.name,
+                        text = category.name,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -229,11 +231,11 @@ fun EnvelopeItem(
                     Divider()
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Budgeted: ${formatCurrency(envelope.budgetedAmount)} / ${envelope.periodType.name.replace("_", " ").lowercase()}",
+                        text = "Budgeted: ${formatCurrency(category.budgetedAmount)} / ${category.periodType.name.replace("_", " ").lowercase()}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (envelope.carryOverEnabled) {
+                    if (category.carryOverEnabled) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Carry-over enabled",
@@ -247,10 +249,10 @@ fun EnvelopeItem(
                         horizontalArrangement = Arrangement.End
                     ) {
                         IconButton(onClick = onEdit) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit Envelope", tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Category", tint = MaterialTheme.colorScheme.primary)
                         }
                         IconButton(onClick = onDelete) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Envelope", tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Delete, contentDescription = "Delete Category", tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -262,23 +264,32 @@ fun EnvelopeItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnvelopeDialog(
-    envelope: Envelope?,
+    category: BudgetCategory?,
+    repository: CashFlowRepository,
     onDismiss: () -> Unit,
-    onSave: (Envelope) -> Unit,
+    onSave: (BudgetCategory) -> Unit,
     selectedColor: Color,
     onColorSelected: (Color) -> Unit,
     selectedIcon: String,
     onIconSelected: (String) -> Unit
 ) {
-    var name by remember { mutableStateOf(envelope?.name ?: "") }
-    var budgetedAmount by remember { mutableStateOf(envelope?.budgetedAmount?.toString() ?: "0.0") }
-    var periodType by remember { mutableStateOf(envelope?.periodType ?: RecurrenceType.MONTHLY) }
-    var carryOverEnabled by remember { mutableStateOf(envelope?.carryOverEnabled ?: false) }
-    var isActive by remember { mutableStateOf(envelope?.isActive ?: true) }
+    var name by remember { mutableStateOf(category?.name ?: "") }
+    var budgetedAmount by remember { mutableStateOf(category?.budgetedAmount?.toString() ?: "0.0") }
+    var periodType by remember { mutableStateOf(category?.periodType ?: RecurrenceType.MONTHLY) }
+    var carryOverEnabled by remember { mutableStateOf(category?.carryOverEnabled ?: false) }
+    var isActive by remember { mutableStateOf(category?.isActive ?: true) }
+    
+    // Get default budget
+    var defaultBudgetId by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            defaultBudgetId = repository.getDefaultBudget()?.id
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (envelope == null) "Add Envelope" else "Edit Envelope") },
+        title = { Text(if (category == null) "Add Category" else "Edit Category") },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -286,7 +297,7 @@ fun EnvelopeDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Envelope Name") },
+                    label = { Text("Category Name") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
@@ -378,20 +389,24 @@ fun EnvelopeDialog(
             TextButton(
                 onClick = {
                     val amountValue = budgetedAmount.toDoubleOrNull() ?: 0.0
-                    onSave(
-                        Envelope(
-                            id = envelope?.id ?: 0,
-                            name = name,
-                            color = selectedColor,
-                            icon = selectedIcon,
-                            budgetedAmount = amountValue,
-                            periodType = periodType,
-                            accountId = envelope?.accountId,
-                            carryOverEnabled = carryOverEnabled,
-                            isActive = isActive,
-                            createdAt = envelope?.createdAt ?: Clock.System.now()
+                    val budgetId = defaultBudgetId ?: category?.budgetId ?: 0L
+                    if (budgetId > 0) {
+                        onSave(
+                            BudgetCategory(
+                                id = category?.id ?: 0,
+                                budgetId = budgetId,
+                                name = name,
+                                color = selectedColor,
+                                icon = selectedIcon,
+                                budgetedAmount = amountValue,
+                                periodType = periodType,
+                                accountId = category?.accountId,
+                                carryOverEnabled = carryOverEnabled,
+                                isActive = isActive,
+                                createdAt = category?.createdAt ?: Clock.System.now()
+                            )
                         )
-                    )
+                    }
                 }
             ) {
                 Text("Save")

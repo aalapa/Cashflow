@@ -63,10 +63,10 @@ fun TransactionsScreen(repository: CashFlowRepository) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(state.transactions) { transaction ->
-                    val envelope = state.envelopes.find { it.id == transaction.envelopeId }
+                    val category = state.categories.find { it.id == transaction.categoryId }
                     TransactionItem(
                         transaction = transaction,
-                        envelope = envelope,
+                        category = category,
                         onEdit = { viewModel.handleIntent(TransactionsIntent.EditTransaction(transaction)) },
                         onDelete = { viewModel.handleIntent(TransactionsIntent.DeleteTransaction(transaction)) }
                     )
@@ -78,7 +78,7 @@ fun TransactionsScreen(repository: CashFlowRepository) {
             TransactionDialog(
                 transaction = state.editingTransaction,
                 accounts = state.accounts,
-                envelopes = state.envelopes,
+                categories = state.categories,
                 onDismiss = { viewModel.handleIntent(TransactionsIntent.HideAddDialog) },
                 onSave = { transaction ->
                     viewModel.handleIntent(TransactionsIntent.SaveTransaction(transaction))
@@ -91,7 +91,7 @@ fun TransactionsScreen(repository: CashFlowRepository) {
 @Composable
 fun TransactionItem(
     transaction: Transaction,
-    envelope: com.cashflow.app.domain.model.Envelope? = null,
+    category: com.cashflow.app.domain.model.BudgetCategory? = null,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -119,12 +119,12 @@ fun TransactionItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
-                    if (envelope != null) {
+                    if (category != null) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
-                            imageVector = getIconForString(envelope.icon ?: "Folder"),
-                            contentDescription = envelope.name,
-                            tint = envelope.color,
+                            imageVector = getIconForString(category.icon ?: "Folder"),
+                            contentDescription = category.name,
+                            tint = category.color,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -157,7 +157,7 @@ fun TransactionItem(
 fun TransactionDialog(
     transaction: Transaction?,
     accounts: List<com.cashflow.app.domain.model.Account>,
-    envelopes: List<com.cashflow.app.domain.model.Envelope> = emptyList(),
+    categories: List<com.cashflow.app.domain.model.BudgetCategory> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (Transaction) -> Unit
 ) {
@@ -166,7 +166,7 @@ fun TransactionDialog(
     var type by remember { mutableStateOf(transaction?.type ?: TransactionType.MANUAL_ADJUSTMENT) }
     var selectedAccountId by remember { mutableStateOf(transaction?.accountId ?: (accounts.firstOrNull()?.id ?: 0L)) }
     var selectedToAccountId by remember { mutableStateOf(transaction?.toAccountId ?: (accounts.getOrNull(1)?.id)) }
-    var selectedEnvelopeId by remember { mutableStateOf<Long?>(transaction?.envelopeId) }
+    var selectedCategoryId by remember { mutableStateOf<Long?>(transaction?.categoryId) }
     val timeZone = TimeZone.currentSystemDefault()
     val today = Clock.System.now().toLocalDateTime(timeZone).date
     val now = Clock.System.now().toLocalDateTime(timeZone)
@@ -288,22 +288,22 @@ fun TransactionDialog(
                     }
                 }
                 
-                // Envelope picker (optional)
-                if (envelopes.isNotEmpty()) {
-                    var envelopeExpanded by remember { mutableStateOf(false) }
-                    val selectedEnvelope = envelopes.find { it.id == selectedEnvelopeId }
+                // Category picker (optional)
+                if (categories.isNotEmpty()) {
+                    var categoryExpanded by remember { mutableStateOf(false) }
+                    val selectedCategory = categories.find { it.id == selectedCategoryId }
                     
                     ExposedDropdownMenuBox(
-                        expanded = envelopeExpanded,
-                        onExpandedChange = { envelopeExpanded = !envelopeExpanded }
+                        expanded = categoryExpanded,
+                        onExpandedChange = { categoryExpanded = !categoryExpanded }
                     ) {
                         OutlinedTextField(
-                            value = selectedEnvelope?.name ?: "Select Envelope (Optional)",
+                            value = selectedCategory?.name ?: "Select Category (Optional)",
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Envelope") },
+                            label = { Text("Budget Category") },
                             leadingIcon = {
-                                selectedEnvelope?.let {
+                                selectedCategory?.let {
                                     Icon(
                                         imageVector = getIconForString(it.icon ?: "Folder"),
                                         contentDescription = null,
@@ -312,34 +312,34 @@ fun TransactionDialog(
                                     )
                                 }
                             },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = envelopeExpanded) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor()
                         )
                         ExposedDropdownMenu(
-                            expanded = envelopeExpanded,
-                            onDismissRequest = { envelopeExpanded = false }
+                            expanded = categoryExpanded,
+                            onDismissRequest = { categoryExpanded = false }
                         ) {
                             DropdownMenuItem(
                                 text = { Text("None") },
                                 onClick = {
-                                    selectedEnvelopeId = null
-                                    envelopeExpanded = false
+                                    selectedCategoryId = null
+                                    categoryExpanded = false
                                 }
                             )
-                            envelopes.forEach { envelope ->
+                            categories.forEach { category ->
                                 DropdownMenuItem(
-                                    text = { Text(envelope.name) },
+                                    text = { Text(category.name) },
                                     onClick = {
-                                        selectedEnvelopeId = envelope.id
-                                        envelopeExpanded = false
+                                        selectedCategoryId = category.id
+                                        categoryExpanded = false
                                     },
                                     leadingIcon = {
                                         Icon(
-                                            imageVector = getIconForString(envelope.icon ?: "Folder"),
+                                            imageVector = getIconForString(category.icon ?: "Folder"),
                                             contentDescription = null,
-                                            tint = envelope.color
+                                            tint = category.color
                                         )
                                     }
                                 )
@@ -363,7 +363,7 @@ fun TransactionDialog(
                             date = transaction?.date ?: today,
                             timestamp = transaction?.timestamp ?: now,
                             description = description,
-                            envelopeId = selectedEnvelopeId
+                            categoryId = selectedCategoryId
                         )
                     )
                 }

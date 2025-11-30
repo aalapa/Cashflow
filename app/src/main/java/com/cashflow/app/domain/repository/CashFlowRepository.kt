@@ -33,7 +33,7 @@ interface CashFlowRepository {
     suspend fun removeBillOverride(billId: Long, date: LocalDate)
     
     // Bill Payments
-    suspend fun markBillAsPaid(billId: Long, dueDate: LocalDate, accountId: Long, amount: Double, envelopeId: Long? = null): Long
+    suspend fun markBillAsPaid(billId: Long, dueDate: LocalDate, accountId: Long, amount: Double, categoryId: Long? = null): Long
     suspend fun isBillPaid(billId: Long, dueDate: LocalDate): Boolean
     fun getBillPayments(billId: Long): Flow<List<BillPayment>>
     
@@ -65,48 +65,62 @@ interface CashFlowRepository {
         accounts: List<Account>
     ): List<CashFlowDay>
     
-    // Envelopes
-    fun getAllActiveEnvelopes(): Flow<List<Envelope>>
-    fun getAllEnvelopes(): Flow<List<Envelope>>
-    suspend fun getEnvelopeById(id: Long): Envelope?
-    suspend fun insertEnvelope(envelope: Envelope): Long
-    suspend fun updateEnvelope(envelope: Envelope)
-    suspend fun deleteEnvelope(envelope: Envelope)
+    // Budgets
+    fun getAllActiveBudgets(): Flow<List<Budget>>
+    fun getAllBudgets(): Flow<List<Budget>>
+    suspend fun getBudgetById(id: Long): Budget?
+    suspend fun getDefaultBudget(): Budget?
+    suspend fun insertBudget(budget: Budget): Long
+    suspend fun updateBudget(budget: Budget)
+    suspend fun deleteBudget(budget: Budget)
+    suspend fun setDefaultBudget(budgetId: Long)
     
-    // Envelope Allocations
-    fun getAllocationsForEnvelope(envelopeId: Long): Flow<List<EnvelopeAllocation>>
-    suspend fun getAllocationForPeriod(envelopeId: Long, date: LocalDate): EnvelopeAllocation?
-    suspend fun insertAllocation(allocation: EnvelopeAllocation): Long
-    suspend fun updateAllocation(allocation: EnvelopeAllocation)
-    suspend fun deleteAllocation(allocation: EnvelopeAllocation)
+    // Budget Categories
+    fun getAllActiveCategories(): Flow<List<BudgetCategory>>
+    fun getAllCategories(): Flow<List<BudgetCategory>>
+    fun getCategoriesForBudget(budgetId: Long): Flow<List<BudgetCategory>>
+    suspend fun getCategoryById(id: Long): BudgetCategory?
+    suspend fun insertCategory(category: BudgetCategory): Long
+    suspend fun updateCategory(category: BudgetCategory)
+    suspend fun deleteCategory(category: BudgetCategory)
     
-    // Envelope Balance Calculation
-    suspend fun getEnvelopeBalance(envelopeId: Long, date: LocalDate): Double
-    fun getEnvelopeTransactions(envelopeId: Long): Flow<List<Transaction>>
+    // Budget Category Allocations
+    fun getAllocationsForCategory(categoryId: Long): Flow<List<BudgetCategoryAllocation>>
+    suspend fun getAllocationForPeriod(categoryId: Long, date: LocalDate): BudgetCategoryAllocation?
+    suspend fun insertAllocation(allocation: BudgetCategoryAllocation): Long
+    suspend fun updateAllocation(allocation: BudgetCategoryAllocation)
+    suspend fun deleteAllocation(allocation: BudgetCategoryAllocation)
+    
+    // Budget Category Balance Calculation
+    suspend fun getCategoryBalance(categoryId: Long, date: LocalDate): Double
+    fun getCategoryTransactions(categoryId: Long): Flow<List<Transaction>>
     
     // Period Management
-    suspend fun resetEnvelopePeriod(envelopeId: Long, newPeriodStart: LocalDate, carryOverAmount: Double = 0.0)
-    suspend fun getEnvelopeHistory(envelopeId: Long, startDate: LocalDate, endDate: LocalDate): List<EnvelopePeriodHistory>
+    suspend fun resetCategoryPeriod(categoryId: Long, newPeriodStart: LocalDate, carryOverAmount: Double = 0.0)
+    suspend fun getCategoryHistory(categoryId: Long, startDate: LocalDate, endDate: LocalDate): List<CategoryPeriodHistory>
     
-    // Envelope Transfers
-    fun getEnvelopeTransfers(envelopeId: Long): Flow<List<EnvelopeTransfer>>
-    suspend fun transferBetweenEnvelopes(fromEnvelopeId: Long, toEnvelopeId: Long, amount: Double, date: LocalDate, description: String?): Long
-    suspend fun deleteTransfer(transfer: EnvelopeTransfer)
+    // Budget Category Transfers
+    fun getCategoryTransfers(categoryId: Long): Flow<List<BudgetCategoryTransfer>>
+    suspend fun transferBetweenCategories(fromCategoryId: Long, toCategoryId: Long, amount: Double, date: LocalDate, description: String?): Long
+    suspend fun deleteTransfer(transfer: BudgetCategoryTransfer)
     
     // Auto-Categorization Rules
     fun getAllCategorizationRules(): Flow<List<CategorizationRule>>
-    fun getRulesForEnvelope(envelopeId: Long): Flow<List<CategorizationRule>>
+    fun getRulesForCategory(categoryId: Long): Flow<List<CategorizationRule>>
     suspend fun insertCategorizationRule(rule: CategorizationRule): Long
     suspend fun updateCategorizationRule(rule: CategorizationRule)
     suspend fun deleteCategorizationRule(rule: CategorizationRule)
-    suspend fun applyAutoCategorization(transaction: Transaction): Long? // Returns envelopeId if matched
+    suspend fun applyAutoCategorization(transaction: Transaction): Long? // Returns categoryId if matched
     
     // Analytics
-    suspend fun getEnvelopeSpendingTrend(envelopeId: Long, months: Int): List<MonthlySpending>
-    suspend fun getTotalSpendingByEnvelope(startDate: LocalDate, endDate: LocalDate): Map<Long, Double>
+    suspend fun getCategorySpendingTrend(categoryId: Long, months: Int): List<MonthlySpending>
+    suspend fun getTotalSpendingByCategory(startDate: LocalDate, endDate: LocalDate): Map<Long, Double>
+    
+    // Default Budget Setup
+    suspend fun initializeDefaultBudgetIfNeeded()
 }
 
-data class EnvelopePeriodHistory(
+data class CategoryPeriodHistory(
     val periodStart: LocalDate,
     val periodEnd: LocalDate,
     val allocated: Double,

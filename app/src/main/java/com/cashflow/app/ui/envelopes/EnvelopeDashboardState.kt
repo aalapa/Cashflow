@@ -1,12 +1,12 @@
 package com.cashflow.app.ui.envelopes
 
-import com.cashflow.app.domain.model.Envelope
+import com.cashflow.app.domain.model.BudgetCategory
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 data class EnvelopeBalance(
-    val envelope: Envelope,
+    val category: BudgetCategory,
     val allocated: Double,
     val spent: Double,
     val balance: Double,
@@ -15,7 +15,7 @@ data class EnvelopeBalance(
 )
 
 data class EnvelopeDashboardState(
-    val envelopes: List<Envelope> = emptyList(),
+    val categories: List<BudgetCategory> = emptyList(),
     val balances: Map<Long, EnvelopeBalance> = emptyMap(),
     val selectedDate: LocalDate = kotlinx.datetime.Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date,
     val isLoading: Boolean = false,

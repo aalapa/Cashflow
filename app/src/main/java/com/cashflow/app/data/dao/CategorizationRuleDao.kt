@@ -9,8 +9,8 @@ interface CategorizationRuleDao {
     @Query("SELECT * FROM categorization_rules WHERE isActive = 1 ORDER BY keyword")
     fun getAllActiveRules(): Flow<List<CategorizationRuleEntity>>
 
-    @Query("SELECT * FROM categorization_rules WHERE envelopeId = :envelopeId AND isActive = 1")
-    fun getRulesForEnvelope(envelopeId: Long): Flow<List<CategorizationRuleEntity>>
+    @Query("SELECT * FROM categorization_rules WHERE categoryId = :categoryId AND isActive = 1")
+    fun getRulesForCategory(categoryId: Long): Flow<List<CategorizationRuleEntity>>
 
     @Query("SELECT * FROM categorization_rules WHERE id = :id")
     suspend fun getRuleById(id: Long): CategorizationRuleEntity?

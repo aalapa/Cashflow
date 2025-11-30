@@ -1,6 +1,1 @@
-<<<<<<< Updated upstream
-Ðñ	ÿÉ	
-=======
-Ðñ	ÿÉ	ãæâÔ
-Ù
->>>>>>> Stashed changes
+îÀ

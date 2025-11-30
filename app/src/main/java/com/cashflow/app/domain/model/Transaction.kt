@@ -15,6 +15,6 @@ data class Transaction(
     val description: String,
     val relatedBillId: Long? = null,
     val relatedIncomeId: Long? = null,
-    val envelopeId: Long? = null // Link to an envelope for budgeting
+    val categoryId: Long? = null // Link to a budget category for budgeting
 )
 

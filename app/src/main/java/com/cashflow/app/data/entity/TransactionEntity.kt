@@ -36,6 +36,6 @@ data class TransactionEntity(
     val description: String,
     val relatedBillId: Long? = null, // If this transaction is related to a bill
     val relatedIncomeId: Long? = null, // If this transaction is related to income
-    val envelopeId: Long? = null // Link to an envelope for budgeting
+    val categoryId: Long? = null // Link to a budget category for budgeting
 )
 

@@ -14,6 +14,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.cashflow.app.ui.theme.CashFlowTheme
 import com.cashflow.app.ui.navigation.CashFlowNavigation
+import com.cashflow.app.di.AppModule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: SharedPreferences
@@ -21,6 +25,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = getSharedPreferences("cashflow_prefs", MODE_PRIVATE)
+        
+        // Initialize default budget if needed
+        CoroutineScope(Dispatchers.IO).launch {
+            val repository = AppModule.provideRepository(this@MainActivity)
+            repository.initializeDefaultBudgetIfNeeded()
+        }
         
         setContent {
             var isDarkTheme by remember {

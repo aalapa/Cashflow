@@ -42,8 +42,8 @@ import com.cashflow.app.ui.envelopes.EnvelopeHistoryScreen
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    // Primary envelope budgeting screens
-    object Envelopes : Screen("envelopes", "Envelopes", Icons.Default.Folder)
+    // Primary budget categories screens
+    object Envelopes : Screen("envelopes", "Budget Categories", Icons.Default.Folder)
     object Allocation : Screen("allocation", "Allocate", Icons.Default.AccountBalanceWallet)
     object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Dashboard)
     
@@ -194,8 +194,8 @@ fun CashFlowNavigation(
                 EnvelopeDashboardScreen(
                     repository = repository,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToHistory = { envelope ->
-                        navController.navigate("envelope_history/${envelope.id}")
+                    onNavigateToHistory = { category ->
+                        navController.navigate("category_history/${category.id}")
                     }
                 )
             }
@@ -220,12 +220,12 @@ fun CashFlowNavigation(
                 )
             }
             composable(
-                route = "envelope_history/{envelopeId}",
-                arguments = listOf(navArgument("envelopeId") { type = NavType.LongType })
+                route = "category_history/{categoryId}",
+                arguments = listOf(navArgument("categoryId") { type = NavType.LongType })
             ) { backStackEntry ->
-                val envelopeId = backStackEntry.arguments?.getLong("envelopeId") ?: 0L
+                val categoryId = backStackEntry.arguments?.getLong("categoryId") ?: 0L
                 EnvelopeHistoryScreen(
-                    envelopeId = envelopeId,
+                    categoryId = categoryId,
                     repository = repository,
                     onNavigateBack = { navController.popBackStack() }
                 )

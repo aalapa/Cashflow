@@ -28,11 +28,11 @@ class EnvelopeAnalyticsViewModel(
                 viewModelScope.launch {
                     _state.update { it.copy(isLoading = true) }
                     
-                    repository.getAllActiveEnvelopes()
+                    repository.getAllActiveCategories()
                         .catch { e ->
                             _state.update { it.copy(error = e.message, isLoading = false) }
                         }
-                        .collect { envelopes ->
+                        .collect { categories ->
                             val timeZone = TimeZone.currentSystemDefault()
                             val today = Clock.System.now().toLocalDateTime(timeZone).date
                             val startDate = today.let {
@@ -48,18 +48,18 @@ class EnvelopeAnalyticsViewModel(
                             }
                             
                             val spendingTrends = mutableMapOf<Long, List<MonthlySpending>>()
-                            for (envelope in envelopes) {
-                                val trend = repository.getEnvelopeSpendingTrend(envelope.id, 3)
-                                spendingTrends[envelope.id] = trend
+                            for (category in categories) {
+                                val trend = repository.getCategorySpendingTrend(category.id, 3)
+                                spendingTrends[category.id] = trend
                             }
                             
-                            val spendingByEnvelope = repository.getTotalSpendingByEnvelope(startDate, today)
+                            val spendingByCategory = repository.getTotalSpendingByCategory(startDate, today)
                             
                             _state.update {
                                 it.copy(
-                                    envelopes = envelopes,
+                                    categories = categories,
                                     spendingTrends = spendingTrends,
-                                    spendingByEnvelope = spendingByEnvelope,
+                                    spendingByCategory = spendingByCategory,
                                     isLoading = false
                                 )
                             }

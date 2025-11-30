@@ -5,7 +5,7 @@ import com.cashflow.app.domain.model.Transaction
 data class TransactionsState(
     val transactions: List<Transaction> = emptyList(),
     val accounts: List<com.cashflow.app.domain.model.Account> = emptyList(),
-    val envelopes: List<com.cashflow.app.domain.model.Envelope> = emptyList(),
+    val categories: List<com.cashflow.app.domain.model.BudgetCategory> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val showAddDialog: Boolean = false,

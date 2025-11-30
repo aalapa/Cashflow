@@ -102,10 +102,10 @@ fun AllocationScreen(
         if (state.showAllocationDialog && selectedOccurrence != null) {
             AllocationDialog(
                 occurrence = selectedOccurrence,
-                envelopes = state.envelopes,
+                categories = state.categories,
                 allocations = state.allocations,
-                onAllocationChange = { envelopeId, amount ->
-                    viewModel.handleIntent(AllocationIntent.SetAllocation(envelopeId, amount))
+                onAllocationChange = { categoryId, amount ->
+                    viewModel.handleIntent(AllocationIntent.SetAllocation(categoryId, amount))
                 },
                 onSave = {
                     viewModel.handleIntent(AllocationIntent.SaveAllocations)
@@ -163,7 +163,7 @@ fun IncomeOccurrenceCard(
 @Composable
 fun AllocationDialog(
     occurrence: com.cashflow.app.domain.model.IncomeOccurrence,
-    envelopes: List<com.cashflow.app.domain.model.Envelope>,
+    categories: List<com.cashflow.app.domain.model.BudgetCategory>,
     allocations: Map<Long, Double>,
     onAllocationChange: (Long, Double) -> Unit,
     onSave: () -> Unit,
@@ -188,22 +188,22 @@ fun AllocationDialog(
                 Divider()
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                envelopes.forEach { envelope ->
-                    var amountText by remember { mutableStateOf(allocations[envelope.id]?.toString() ?: "") }
+                categories.forEach { category ->
+                    var amountText by remember { mutableStateOf(allocations[category.id]?.toString() ?: "") }
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = getIconForString(envelope.icon ?: "Folder"),
+                            imageVector = getIconForString(category.icon ?: "Folder"),
                             contentDescription = null,
-                            tint = envelope.color,
+                            tint = category.color,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = envelope.name,
+                            text = category.name,
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -212,7 +212,7 @@ fun AllocationDialog(
                             onValueChange = {
                                 amountText = it
                                 val amount = it.toDoubleOrNull() ?: 0.0
-                                onAllocationChange(envelope.id, amount)
+                                onAllocationChange(category.id, amount)
                             },
                             modifier = Modifier.width(100.dp),
                             label = { Text("$") },

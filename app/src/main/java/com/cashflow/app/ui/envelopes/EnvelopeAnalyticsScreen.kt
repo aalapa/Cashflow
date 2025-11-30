@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.cashflow.app.domain.model.Envelope
+import com.cashflow.app.domain.model.BudgetCategory
 import com.cashflow.app.domain.repository.CashFlowRepository
 import com.cashflow.app.domain.repository.MonthlySpending
 import com.cashflow.app.ui.timeline.formatCurrency
@@ -34,7 +34,7 @@ fun EnvelopeAnalyticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Envelope Analytics") },
+                title = { Text("Category Analytics") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -60,12 +60,12 @@ fun EnvelopeAnalyticsScreen(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(state.envelopes) { envelope ->
-                        val trend = state.spendingTrends[envelope.id] ?: emptyList()
-                        val totalSpent = state.spendingByEnvelope[envelope.id] ?: 0.0
+                    items(state.categories) { category ->
+                        val trend = state.spendingTrends[category.id] ?: emptyList()
+                        val totalSpent = state.spendingByCategory[category.id] ?: 0.0
                         
                         AnalyticsCard(
-                            envelope = envelope,
+                            category = category,
                             trend = trend,
                             totalSpent = totalSpent
                         )
@@ -78,7 +78,7 @@ fun EnvelopeAnalyticsScreen(
 
 @Composable
 fun AnalyticsCard(
-    envelope: Envelope,
+    category: BudgetCategory,
     trend: List<MonthlySpending>,
     totalSpent: Double
 ) {
@@ -94,15 +94,15 @@ fun AnalyticsCard(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = getIconForString(envelope.icon ?: "Folder"),
+                    imageVector = getIconForString(category.icon ?: "Folder"),
                     contentDescription = null,
-                    tint = envelope.color,
+                    tint = category.color,
                     modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = envelope.name,
+                        text = category.name,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )

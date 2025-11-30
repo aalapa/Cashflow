@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
-#Fri Nov 21 21:44:00 CST 2025
-=======
-#Sun Nov 23 11:14:47 CST 2025
->>>>>>> Stashed changes
+#Sun Nov 23 12:11:20 CST 2025
 base.0=/Users/ragnor/StudioProjects/cashflow/app/build/intermediates/dex/debug/mergeExtDexDebug/classes.dex
 base.1=/Users/ragnor/StudioProjects/cashflow/app/build/intermediates/dex/debug/mergeProjectDexDebug/0/classes.dex
 base.10=/Users/ragnor/StudioProjects/cashflow/app/build/intermediates/dex/debug/mergeProjectDexDebug/6/classes.dex

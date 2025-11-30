@@ -143,10 +143,10 @@ fun BillsScreen(repository: CashFlowRepository) {
             MarkPaidDialog(
                 occurrence = billToMarkPaid,
                 accounts = state.accounts,
-                envelopes = state.envelopes,
+                categories = state.categories,
                 onDismiss = { viewModel.handleIntent(BillsIntent.HideMarkPaidDialog) },
-                onMarkPaid = { accountId, envelopeId ->
-                    viewModel.handleIntent(BillsIntent.MarkBillAsPaid(billToMarkPaid, accountId, envelopeId))
+                onMarkPaid = { accountId, categoryId ->
+                    viewModel.handleIntent(BillsIntent.MarkBillAsPaid(billToMarkPaid, accountId, categoryId))
                 }
             )
         }
@@ -409,14 +409,14 @@ fun BillOccurrenceItem(
 fun MarkPaidDialog(
     occurrence: BillOccurrence,
     accounts: List<com.cashflow.app.domain.model.Account>,
-    envelopes: List<com.cashflow.app.domain.model.Envelope> = emptyList(),
+    categories: List<com.cashflow.app.domain.model.BudgetCategory> = emptyList(),
     onDismiss: () -> Unit,
     onMarkPaid: (Long, Long?) -> Unit
 ) {
     var selectedAccountId by remember { 
         mutableStateOf(accounts.firstOrNull()?.id ?: 0L) 
     }
-    var selectedEnvelopeId by remember { mutableStateOf<Long?>(null) }
+    var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -468,22 +468,22 @@ fun MarkPaidDialog(
                     }
                 }
                 
-                // Envelope picker (optional)
-                if (envelopes.isNotEmpty()) {
-                    var envelopeExpanded by remember { mutableStateOf(false) }
-                    val selectedEnvelope = envelopes.find { it.id == selectedEnvelopeId }
+                // Category picker (optional)
+                if (categories.isNotEmpty()) {
+                    var categoryExpanded by remember { mutableStateOf(false) }
+                    val selectedCategory = categories.find { it.id == selectedCategoryId }
                     
                     ExposedDropdownMenuBox(
-                        expanded = envelopeExpanded,
-                        onExpandedChange = { envelopeExpanded = !envelopeExpanded }
+                        expanded = categoryExpanded,
+                        onExpandedChange = { categoryExpanded = !categoryExpanded }
                     ) {
                         OutlinedTextField(
-                            value = selectedEnvelope?.name ?: "Select Envelope (Optional)",
+                            value = selectedCategory?.name ?: "Select Category (Optional)",
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Envelope") },
+                            label = { Text("Budget Category") },
                             leadingIcon = {
-                                selectedEnvelope?.let {
+                                selectedCategory?.let {
                                     Icon(
                                         imageVector = getIconForString(it.icon ?: "Folder"),
                                         contentDescription = null,
@@ -492,34 +492,34 @@ fun MarkPaidDialog(
                                     )
                                 }
                             },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = envelopeExpanded) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor()
                         )
                         ExposedDropdownMenu(
-                            expanded = envelopeExpanded,
-                            onDismissRequest = { envelopeExpanded = false }
+                            expanded = categoryExpanded,
+                            onDismissRequest = { categoryExpanded = false }
                         ) {
                             DropdownMenuItem(
                                 text = { Text("None") },
                                 onClick = {
-                                    selectedEnvelopeId = null
-                                    envelopeExpanded = false
+                                    selectedCategoryId = null
+                                    categoryExpanded = false
                                 }
                             )
-                            envelopes.forEach { envelope ->
+                            categories.forEach { category ->
                                 DropdownMenuItem(
-                                    text = { Text(envelope.name) },
+                                    text = { Text(category.name) },
                                     onClick = {
-                                        selectedEnvelopeId = envelope.id
-                                        envelopeExpanded = false
+                                        selectedCategoryId = category.id
+                                        categoryExpanded = false
                                     },
                                     leadingIcon = {
                                         Icon(
-                                            imageVector = getIconForString(envelope.icon ?: "Folder"),
+                                            imageVector = getIconForString(category.icon ?: "Folder"),
                                             contentDescription = null,
-                                            tint = envelope.color
+                                            tint = category.color
                                         )
                                     }
                                 )
@@ -531,7 +531,7 @@ fun MarkPaidDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onMarkPaid(selectedAccountId, selectedEnvelopeId) }
+                onClick = { onMarkPaid(selectedAccountId, selectedCategoryId) }
             ) {
                 Text("Paid")
             }

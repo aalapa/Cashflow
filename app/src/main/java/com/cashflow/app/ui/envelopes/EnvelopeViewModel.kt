@@ -15,54 +15,54 @@ class EnvelopeViewModel(
     val state: StateFlow<EnvelopeState> = _state.asStateFlow()
 
     init {
-        handleIntent(EnvelopeIntent.LoadEnvelopes)
+        handleIntent(EnvelopeIntent.LoadCategories)
     }
 
     fun handleIntent(intent: EnvelopeIntent) {
         when (intent) {
-            is EnvelopeIntent.LoadEnvelopes -> {
+            is EnvelopeIntent.LoadCategories -> {
                 viewModelScope.launch {
-                    repository.getAllActiveEnvelopes()
+                    repository.getAllActiveCategories()
                         .catch { e ->
                             _state.update { it.copy(error = e.message, isLoading = false) }
                         }
-                        .collect { envelopes ->
-                            _state.update { it.copy(envelopes = envelopes, isLoading = false) }
+                        .collect { categories ->
+                            _state.update { it.copy(categories = categories, isLoading = false) }
                         }
                 }
             }
             is EnvelopeIntent.ShowAddDialog -> {
-                _state.update { it.copy(showAddDialog = true, editingEnvelope = null, selectedColor = androidx.compose.ui.graphics.Color(0xFF7C3AED), selectedIcon = "Folder") }
+                _state.update { it.copy(showAddDialog = true, editingCategory = null, selectedColor = androidx.compose.ui.graphics.Color(0xFF7C3AED), selectedIcon = "Folder") }
             }
             is EnvelopeIntent.HideAddDialog -> {
-                _state.update { it.copy(showAddDialog = false, editingEnvelope = null) }
+                _state.update { it.copy(showAddDialog = false, editingCategory = null) }
             }
-            is EnvelopeIntent.EditEnvelope -> {
+            is EnvelopeIntent.EditCategory -> {
                 _state.update { it.copy(
                     showAddDialog = true,
-                    editingEnvelope = intent.envelope,
-                    selectedColor = intent.envelope.color,
-                    selectedIcon = intent.envelope.icon ?: "Folder"
+                    editingCategory = intent.category,
+                    selectedColor = intent.category.color,
+                    selectedIcon = intent.category.icon ?: "Folder"
                 ) }
             }
-            is EnvelopeIntent.SaveEnvelope -> {
+            is EnvelopeIntent.SaveCategory -> {
                 viewModelScope.launch {
                     try {
-                        if (intent.envelope.id == 0L) {
-                            repository.insertEnvelope(intent.envelope)
+                        if (intent.category.id == 0L) {
+                            repository.insertCategory(intent.category)
                         } else {
-                            repository.updateEnvelope(intent.envelope)
+                            repository.updateCategory(intent.category)
                         }
-                        _state.update { it.copy(showAddDialog = false, editingEnvelope = null) }
+                        _state.update { it.copy(showAddDialog = false, editingCategory = null) }
                     } catch (e: Exception) {
                         _state.update { it.copy(error = e.message) }
                     }
                 }
             }
-            is EnvelopeIntent.DeleteEnvelope -> {
+            is EnvelopeIntent.DeleteCategory -> {
                 viewModelScope.launch {
                     try {
-                        repository.deleteEnvelope(intent.envelope)
+                        repository.deleteCategory(intent.category)
                     } catch (e: Exception) {
                         _state.update { it.copy(error = e.message) }
                     }

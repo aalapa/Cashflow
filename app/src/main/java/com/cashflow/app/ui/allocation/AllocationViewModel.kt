@@ -2,7 +2,7 @@ package com.cashflow.app.ui.allocation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cashflow.app.domain.model.EnvelopeAllocation
+import com.cashflow.app.domain.model.BudgetCategoryAllocation
 import com.cashflow.app.domain.model.IncomeOccurrence
 import com.cashflow.app.domain.repository.CashFlowRepository
 import kotlinx.coroutines.flow.*
@@ -29,13 +29,13 @@ class AllocationViewModel(
                 viewModelScope.launch {
                     _state.update { it.copy(isLoading = true) }
                     
-                    // Load envelopes
-                    repository.getAllActiveEnvelopes()
+                    // Load categories
+                    repository.getAllActiveCategories()
                         .catch { e ->
                             _state.update { it.copy(error = e.message, isLoading = false) }
                         }
-                        .collect { envelopes ->
-                            _state.update { it.copy(envelopes = envelopes) }
+                        .collect { categories ->
+                            _state.update { it.copy(categories = categories) }
                         }
                     
                     // Load upcoming income
@@ -78,9 +78,9 @@ class AllocationViewModel(
             is AllocationIntent.SetAllocation -> {
                 val currentAllocations = _state.value.allocations.toMutableMap()
                 if (intent.amount > 0) {
-                    currentAllocations[intent.envelopeId] = intent.amount
+                    currentAllocations[intent.categoryId] = intent.amount
                 } else {
-                    currentAllocations.remove(intent.envelopeId)
+                    currentAllocations.remove(intent.categoryId)
                 }
                 _state.update { it.copy(allocations = currentAllocations) }
             }
@@ -98,18 +98,18 @@ class AllocationViewModel(
                             return@launch
                         }
                         
-                        // Create allocations for each envelope
-                        for ((envelopeId, amount) in allocations) {
-                            val envelope = _state.value.envelopes.find { it.id == envelopeId }
-                            if (envelope != null) {
-                                val (periodStart, periodEnd) = calculatePeriodDates(selectedOccurrence.date, envelope.periodType)
+                        // Create allocations for each category
+                        for ((categoryId, amount) in allocations) {
+                            val category = _state.value.categories.find { it.id == categoryId }
+                            if (category != null) {
+                                val (periodStart, periodEnd) = calculatePeriodDates(selectedOccurrence.date, category.periodType)
                                 
                                 // Check for carry-over
                                 var finalAmount = amount
-                                if (envelope.carryOverEnabled) {
-                                    val previousAllocation = repository.getAllocationForPeriod(envelopeId, selectedOccurrence.date)
+                                if (category.carryOverEnabled) {
+                                    val previousAllocation = repository.getAllocationForPeriod(categoryId, selectedOccurrence.date)
                                     if (previousAllocation != null) {
-                                        val previousTransactions = repository.getEnvelopeTransactions(envelopeId).first()
+                                        val previousTransactions = repository.getCategoryTransactions(categoryId).first()
                                             .filter { 
                                                 it.date >= previousAllocation.periodStart && 
                                                 it.date <= previousAllocation.periodEnd 
@@ -128,9 +128,9 @@ class AllocationViewModel(
                                     }
                                 }
                                 
-                                val allocation = EnvelopeAllocation(
+                                val allocation = BudgetCategoryAllocation(
                                     id = 0,
-                                    envelopeId = envelopeId,
+                                    categoryId = categoryId,
                                     amount = finalAmount,
                                     periodStart = periodStart,
                                     periodEnd = periodEnd,

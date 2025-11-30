@@ -12,7 +12,7 @@ data class BillsState(
     val bills: List<Bill> = emptyList(),
     val billOccurrences: Map<Long, List<BillOccurrence>> = emptyMap(),
     val accounts: List<com.cashflow.app.domain.model.Account> = emptyList(),
-    val envelopes: List<com.cashflow.app.domain.model.Envelope> = emptyList(),
+    val categories: List<com.cashflow.app.domain.model.BudgetCategory> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val showAddDialog: Boolean = false,
@@ -31,7 +31,7 @@ sealed class BillsIntent {
     data class EditBill(val bill: Bill) : BillsIntent()
     data class SaveBill(val bill: Bill) : BillsIntent()
     data class DeleteBill(val bill: Bill) : BillsIntent()
-    data class MarkBillAsPaid(val occurrence: BillOccurrence, val accountId: Long, val envelopeId: Long? = null) : BillsIntent()
+    data class MarkBillAsPaid(val occurrence: BillOccurrence, val accountId: Long, val categoryId: Long? = null) : BillsIntent()
     object HideMarkPaidDialog : BillsIntent()
     data class ShowMarkPaidDialog(val occurrence: BillOccurrence) : BillsIntent()
     data class SetViewMode(val mode: BillsViewMode) : BillsIntent()

@@ -24,23 +24,23 @@ class EnvelopeHistoryViewModel(
                     _state.update { it.copy(isLoading = true) }
                     
                     try {
-                        val envelope = repository.getEnvelopeById(intent.envelopeId)
-                        if (envelope != null) {
+                        val category = repository.getCategoryById(intent.categoryId)
+                        if (category != null) {
                             val timeZone = TimeZone.currentSystemDefault()
                             val today = Clock.System.now().toLocalDateTime(timeZone).date
                             val startDate = LocalDate(today.year - 2, 1, 1) // Last 2 years
                             
-                            val history = repository.getEnvelopeHistory(intent.envelopeId, startDate, today)
+                            val history = repository.getCategoryHistory(intent.categoryId, startDate, today)
                             
                             _state.update {
                                 it.copy(
-                                    envelope = envelope,
+                                    category = category,
                                     history = history,
                                     isLoading = false
                                 )
                             }
                         } else {
-                            _state.update { it.copy(error = "Envelope not found", isLoading = false) }
+                            _state.update { it.copy(error = "Category not found", isLoading = false) }
                         }
                     } catch (e: Exception) {
                         _state.update { it.copy(error = e.message, isLoading = false) }

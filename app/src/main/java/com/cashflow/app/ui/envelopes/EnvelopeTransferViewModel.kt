@@ -17,27 +17,27 @@ class EnvelopeTransferViewModel(
     val state: StateFlow<EnvelopeTransferState> = _state.asStateFlow()
 
     init {
-        handleIntent(EnvelopeTransferIntent.LoadEnvelopes)
+        handleIntent(EnvelopeTransferIntent.LoadCategories)
     }
 
     fun handleIntent(intent: EnvelopeTransferIntent) {
         when (intent) {
-            is EnvelopeTransferIntent.LoadEnvelopes -> {
+            is EnvelopeTransferIntent.LoadCategories -> {
                 viewModelScope.launch {
-                    repository.getAllActiveEnvelopes()
+                    repository.getAllActiveCategories()
                         .catch { e ->
                             _state.update { it.copy(error = e.message, isLoading = false) }
                         }
-                        .collect { envelopes ->
-                            _state.update { it.copy(envelopes = envelopes, isLoading = false) }
+                        .collect { categories ->
+                            _state.update { it.copy(categories = categories, isLoading = false) }
                         }
                 }
             }
-            is EnvelopeTransferIntent.SetFromEnvelope -> {
-                _state.update { it.copy(fromEnvelopeId = intent.envelopeId) }
+            is EnvelopeTransferIntent.SetFromCategory -> {
+                _state.update { it.copy(fromCategoryId = intent.categoryId) }
             }
-            is EnvelopeTransferIntent.SetToEnvelope -> {
-                _state.update { it.copy(toEnvelopeId = intent.envelopeId) }
+            is EnvelopeTransferIntent.SetToCategory -> {
+                _state.update { it.copy(toCategoryId = intent.categoryId) }
             }
             is EnvelopeTransferIntent.SetAmount -> {
                 _state.update { it.copy(amount = intent.amount) }
@@ -48,18 +48,18 @@ class EnvelopeTransferViewModel(
             is EnvelopeTransferIntent.SaveTransfer -> {
                 viewModelScope.launch {
                     try {
-                        val fromId = _state.value.fromEnvelopeId
-                        val toId = _state.value.toEnvelopeId
+                        val fromId = _state.value.fromCategoryId
+                        val toId = _state.value.toCategoryId
                         val amount = _state.value.amount.toDoubleOrNull() ?: 0.0
                         val description = _state.value.description
 
                         if (fromId == null || toId == null) {
-                            _state.update { it.copy(error = "Please select both envelopes") }
+                            _state.update { it.copy(error = "Please select both categories") }
                             return@launch
                         }
 
                         if (fromId == toId) {
-                            _state.update { it.copy(error = "Cannot transfer to the same envelope") }
+                            _state.update { it.copy(error = "Cannot transfer to the same category") }
                             return@launch
                         }
 
@@ -71,12 +71,12 @@ class EnvelopeTransferViewModel(
                         val timeZone = TimeZone.currentSystemDefault()
                         val today = Clock.System.now().toLocalDateTime(timeZone).date
 
-                        repository.transferBetweenEnvelopes(fromId, toId, amount, today, description)
+                        repository.transferBetweenCategories(fromId, toId, amount, today, description)
 
                         _state.update {
                             it.copy(
-                                fromEnvelopeId = null,
-                                toEnvelopeId = null,
+                                fromCategoryId = null,
+                                toCategoryId = null,
                                 amount = "",
                                 description = "",
                                 error = null

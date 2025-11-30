@@ -8,9 +8,10 @@ import com.cashflow.app.data.dao.BillDao
 import com.cashflow.app.data.dao.BillPaymentDao
 import com.cashflow.app.data.dao.IncomeDao
 import com.cashflow.app.data.dao.TransactionDao
-import com.cashflow.app.data.dao.EnvelopeDao
-import com.cashflow.app.data.dao.EnvelopeAllocationDao
-import com.cashflow.app.data.dao.EnvelopeTransferDao
+import com.cashflow.app.data.dao.BudgetDao
+import com.cashflow.app.data.dao.BudgetCategoryDao
+import com.cashflow.app.data.dao.BudgetCategoryAllocationDao
+import com.cashflow.app.data.dao.BudgetCategoryTransferDao
 import com.cashflow.app.data.dao.CategorizationRuleDao
 import com.cashflow.app.data.entity.*
 
@@ -23,12 +24,13 @@ import com.cashflow.app.data.entity.*
         BillOverrideEntity::class,
         BillPaymentEntity::class,
         TransactionEntity::class,
-        EnvelopeEntity::class,
-        EnvelopeAllocationEntity::class,
-        EnvelopeTransferEntity::class,
+        BudgetEntity::class,
+        BudgetCategoryEntity::class,
+        BudgetCategoryAllocationEntity::class,
+        BudgetCategoryTransferEntity::class,
         CategorizationRuleEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -38,9 +40,10 @@ abstract class CashFlowDatabase : RoomDatabase() {
     abstract fun billDao(): BillDao
     abstract fun billPaymentDao(): BillPaymentDao
     abstract fun transactionDao(): TransactionDao
-    abstract fun envelopeDao(): EnvelopeDao
-    abstract fun envelopeAllocationDao(): EnvelopeAllocationDao
-    abstract fun envelopeTransferDao(): EnvelopeTransferDao
+    abstract fun budgetDao(): BudgetDao
+    abstract fun budgetCategoryDao(): BudgetCategoryDao
+    abstract fun budgetCategoryAllocationDao(): BudgetCategoryAllocationDao
+    abstract fun budgetCategoryTransferDao(): BudgetCategoryTransferDao
     abstract fun categorizationRuleDao(): CategorizationRuleDao
 }
 

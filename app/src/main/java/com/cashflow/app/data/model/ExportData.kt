@@ -16,9 +16,10 @@ data class ExportData(
     val billOverrides: List<SerializableBillOverride>,
     val billPayments: List<SerializableBillPayment>,
     val transactions: List<SerializableTransaction>,
-    val envelopes: List<SerializableEnvelope> = emptyList(),
-    val envelopeAllocations: List<SerializableEnvelopeAllocation> = emptyList(),
-    val envelopeTransfers: List<SerializableEnvelopeTransfer> = emptyList(),
+    val budgets: List<SerializableBudget> = emptyList(),
+    val categories: List<SerializableBudgetCategory> = emptyList(),
+    val categoryAllocations: List<SerializableBudgetCategoryAllocation> = emptyList(),
+    val categoryTransfers: List<SerializableBudgetCategoryTransfer> = emptyList(),
     val categorizationRules: List<SerializableCategorizationRule> = emptyList()
 )
 
@@ -92,7 +93,7 @@ data class SerializableTransaction(
     val relatedBillId: Long?,
     val relatedIncomeId: Long?,
     val toAccountId: Long?,
-    val envelopeId: Long? = null
+    val categoryId: Long? = null
 )
 
 // Extension functions to convert entities to serializable format
@@ -159,7 +160,7 @@ fun TransactionEntity.toSerializable() = SerializableTransaction(
     relatedBillId = relatedBillId,
     relatedIncomeId = relatedIncomeId,
     toAccountId = toAccountId,
-    envelopeId = envelopeId
+    categoryId = categoryId
 )
 
 // Extension functions to convert serializable format back to entities
@@ -227,12 +228,22 @@ fun SerializableTransaction.toEntity() = TransactionEntity(
     relatedBillId = relatedBillId,
     relatedIncomeId = relatedIncomeId,
     toAccountId = toAccountId,
-    envelopeId = envelopeId
+    categoryId = categoryId
 )
 
 @Serializable
-data class SerializableEnvelope(
+data class SerializableBudget(
     val id: Long,
+    val name: String,
+    val isDefault: Boolean,
+    val isActive: Boolean,
+    val createdAt: String
+)
+
+@Serializable
+data class SerializableBudgetCategory(
+    val id: Long,
+    val budgetId: Long,
     val name: String,
     val color: String,
     val icon: String?,
@@ -245,9 +256,9 @@ data class SerializableEnvelope(
 )
 
 @Serializable
-data class SerializableEnvelopeAllocation(
+data class SerializableBudgetCategoryAllocation(
     val id: Long,
-    val envelopeId: Long,
+    val categoryId: Long,
     val amount: Double,
     val periodStart: String,
     val periodEnd: String,
@@ -256,10 +267,10 @@ data class SerializableEnvelopeAllocation(
 )
 
 @Serializable
-data class SerializableEnvelopeTransfer(
+data class SerializableBudgetCategoryTransfer(
     val id: Long,
-    val fromEnvelopeId: Long,
-    val toEnvelopeId: Long,
+    val fromCategoryId: Long,
+    val toCategoryId: Long,
     val amount: Double,
     val date: String,
     val description: String?,
@@ -269,15 +280,24 @@ data class SerializableEnvelopeTransfer(
 @Serializable
 data class SerializableCategorizationRule(
     val id: Long,
-    val envelopeId: Long,
+    val categoryId: Long,
     val keyword: String,
     val isActive: Boolean,
     val createdAt: String
 )
 
-// Extension functions for envelope serialization
-fun EnvelopeEntity.toSerializable() = SerializableEnvelope(
+// Extension functions for budget/category serialization
+fun BudgetEntity.toSerializable() = SerializableBudget(
     id = id,
+    name = name,
+    isDefault = isDefault,
+    isActive = isActive,
+    createdAt = createdAt.toString()
+)
+
+fun BudgetCategoryEntity.toSerializable() = SerializableBudgetCategory(
+    id = id,
+    budgetId = budgetId,
     name = name,
     color = color,
     icon = icon,
@@ -289,9 +309,9 @@ fun EnvelopeEntity.toSerializable() = SerializableEnvelope(
     createdAt = createdAt.toString()
 )
 
-fun EnvelopeAllocationEntity.toSerializable() = SerializableEnvelopeAllocation(
+fun BudgetCategoryAllocationEntity.toSerializable() = SerializableBudgetCategoryAllocation(
     id = id,
-    envelopeId = envelopeId,
+    categoryId = categoryId,
     amount = amount,
     periodStart = periodStart.toString(),
     periodEnd = periodEnd.toString(),
@@ -299,10 +319,10 @@ fun EnvelopeAllocationEntity.toSerializable() = SerializableEnvelopeAllocation(
     createdAt = createdAt.toString()
 )
 
-fun EnvelopeTransferEntity.toSerializable() = SerializableEnvelopeTransfer(
+fun BudgetCategoryTransferEntity.toSerializable() = SerializableBudgetCategoryTransfer(
     id = id,
-    fromEnvelopeId = fromEnvelopeId,
-    toEnvelopeId = toEnvelopeId,
+    fromCategoryId = fromCategoryId,
+    toCategoryId = toCategoryId,
     amount = amount,
     date = date.toString(),
     description = description,
@@ -311,14 +331,23 @@ fun EnvelopeTransferEntity.toSerializable() = SerializableEnvelopeTransfer(
 
 fun CategorizationRuleEntity.toSerializable() = SerializableCategorizationRule(
     id = id,
-    envelopeId = envelopeId,
+    categoryId = categoryId,
     keyword = keyword,
     isActive = isActive,
     createdAt = createdAt.toString()
 )
 
-fun SerializableEnvelope.toEntity() = EnvelopeEntity(
+fun SerializableBudget.toEntity() = BudgetEntity(
     id = id,
+    name = name,
+    isDefault = isDefault,
+    createdAt = LocalDateTime.parse(createdAt),
+    isActive = isActive
+)
+
+fun SerializableBudgetCategory.toEntity() = BudgetCategoryEntity(
+    id = id,
+    budgetId = budgetId,
     name = name,
     color = color,
     icon = icon,
@@ -330,9 +359,9 @@ fun SerializableEnvelope.toEntity() = EnvelopeEntity(
     isActive = isActive
 )
 
-fun SerializableEnvelopeAllocation.toEntity() = EnvelopeAllocationEntity(
+fun SerializableBudgetCategoryAllocation.toEntity() = BudgetCategoryAllocationEntity(
     id = id,
-    envelopeId = envelopeId,
+    categoryId = categoryId,
     amount = amount,
     periodStart = LocalDate.parse(periodStart),
     periodEnd = LocalDate.parse(periodEnd),
@@ -340,10 +369,10 @@ fun SerializableEnvelopeAllocation.toEntity() = EnvelopeAllocationEntity(
     createdAt = LocalDateTime.parse(createdAt)
 )
 
-fun SerializableEnvelopeTransfer.toEntity() = EnvelopeTransferEntity(
+fun SerializableBudgetCategoryTransfer.toEntity() = BudgetCategoryTransferEntity(
     id = id,
-    fromEnvelopeId = fromEnvelopeId,
-    toEnvelopeId = toEnvelopeId,
+    fromCategoryId = fromCategoryId,
+    toCategoryId = toCategoryId,
     amount = amount,
     date = LocalDate.parse(date),
     description = description,
@@ -352,7 +381,7 @@ fun SerializableEnvelopeTransfer.toEntity() = EnvelopeTransferEntity(
 
 fun SerializableCategorizationRule.toEntity() = CategorizationRuleEntity(
     id = id,
-    envelopeId = envelopeId,
+    categoryId = categoryId,
     keyword = keyword,
     isActive = isActive,
     createdAt = LocalDateTime.parse(createdAt)

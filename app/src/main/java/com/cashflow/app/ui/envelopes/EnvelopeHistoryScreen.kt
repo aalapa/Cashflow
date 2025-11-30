@@ -13,21 +13,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cashflow.app.domain.repository.CashFlowRepository
-import com.cashflow.app.domain.repository.EnvelopePeriodHistory
+import com.cashflow.app.domain.repository.CategoryPeriodHistory
 import com.cashflow.app.ui.timeline.formatCurrency
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnvelopeHistoryScreen(
-    envelopeId: Long,
+    categoryId: Long,
     repository: CashFlowRepository,
     onNavigateBack: () -> Unit = {}
 ) {
     val viewModel: EnvelopeHistoryViewModel = viewModel { EnvelopeHistoryViewModel(repository) }
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(envelopeId) {
-        viewModel.handleIntent(EnvelopeHistoryIntent.LoadHistory(envelopeId))
+    LaunchedEffect(categoryId) {
+        viewModel.handleIntent(EnvelopeHistoryIntent.LoadHistory(categoryId))
     }
 
     Scaffold(
@@ -35,7 +35,7 @@ fun EnvelopeHistoryScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        state.envelope?.name ?: "Envelope History",
+                        state.category?.name ?: "Category History",
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -96,7 +96,7 @@ fun EnvelopeHistoryScreen(
 }
 
 @Composable
-fun PeriodHistoryCard(period: EnvelopePeriodHistory) {
+fun PeriodHistoryCard(period: CategoryPeriodHistory) {
     val isOverBudget = period.balance < 0
     val progress = if (period.allocated > 0) {
         (period.spent / period.allocated).coerceIn(0.0, 1.0).toFloat()

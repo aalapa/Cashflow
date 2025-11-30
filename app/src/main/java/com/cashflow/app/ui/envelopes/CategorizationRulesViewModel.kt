@@ -24,12 +24,12 @@ class CategorizationRulesViewModel(
                 viewModelScope.launch {
                     _state.update { it.copy(isLoading = true) }
                     
-                    repository.getAllActiveEnvelopes()
+                    repository.getAllActiveCategories()
                         .catch { e ->
                             _state.update { it.copy(error = e.message, isLoading = false) }
                         }
-                        .collect { envelopes ->
-                            _state.update { it.copy(envelopes = envelopes) }
+                        .collect { categories ->
+                            _state.update { it.copy(categories = categories) }
                         }
                     
                     repository.getAllCategorizationRules()
@@ -46,7 +46,7 @@ class CategorizationRulesViewModel(
                     it.copy(
                         showAddDialog = true,
                         editingRule = null,
-                        selectedEnvelopeId = null,
+                        selectedCategoryId = null,
                         keyword = ""
                     )
                 }
@@ -56,7 +56,7 @@ class CategorizationRulesViewModel(
                     it.copy(
                         showAddDialog = false,
                         editingRule = null,
-                        selectedEnvelopeId = null,
+                        selectedCategoryId = null,
                         keyword = ""
                     )
                 }
@@ -66,7 +66,7 @@ class CategorizationRulesViewModel(
                     it.copy(
                         showAddDialog = true,
                         editingRule = intent.rule,
-                        selectedEnvelopeId = intent.rule.envelopeId,
+                        selectedCategoryId = intent.rule.categoryId,
                         keyword = intent.rule.keyword
                     )
                 }
@@ -83,7 +83,7 @@ class CategorizationRulesViewModel(
                             it.copy(
                                 showAddDialog = false,
                                 editingRule = null,
-                                selectedEnvelopeId = null,
+                                selectedCategoryId = null,
                                 keyword = ""
                             )
                         }
@@ -101,8 +101,8 @@ class CategorizationRulesViewModel(
                     }
                 }
             }
-            is CategorizationRulesIntent.SetSelectedEnvelope -> {
-                _state.update { it.copy(selectedEnvelopeId = intent.envelopeId) }
+            is CategorizationRulesIntent.SetSelectedCategory -> {
+                _state.update { it.copy(selectedCategoryId = intent.categoryId) }
             }
             is CategorizationRulesIntent.SetKeyword -> {
                 _state.update { it.copy(keyword = intent.keyword) }

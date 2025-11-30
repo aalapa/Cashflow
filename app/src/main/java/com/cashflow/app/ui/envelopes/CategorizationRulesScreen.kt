@@ -93,7 +93,7 @@ fun CategorizationRulesScreen(
                         items(state.rules) { rule ->
                             RuleItem(
                                 rule = rule,
-                                envelope = state.envelopes.find { it.id == rule.envelopeId },
+                                category = state.categories.find { it.id == rule.categoryId },
                                 onEdit = { viewModel.handleIntent(CategorizationRulesIntent.EditRule(rule)) },
                                 onDelete = { viewModel.handleIntent(CategorizationRulesIntent.DeleteRule(rule)) }
                             )
@@ -107,19 +107,19 @@ fun CategorizationRulesScreen(
         if (state.showAddDialog) {
             RuleDialog(
                 rule = state.editingRule,
-                envelopes = state.envelopes,
-                selectedEnvelopeId = state.selectedEnvelopeId,
+                categories = state.categories,
+                selectedCategoryId = state.selectedCategoryId,
                 keyword = state.keyword,
-                onEnvelopeSelected = { viewModel.handleIntent(CategorizationRulesIntent.SetSelectedEnvelope(it)) },
+                onCategorySelected = { viewModel.handleIntent(CategorizationRulesIntent.SetSelectedCategory(it)) },
                 onKeywordChange = { viewModel.handleIntent(CategorizationRulesIntent.SetKeyword(it)) },
                 onSave = {
-                    val envelopeId = state.selectedEnvelopeId
-                    if (envelopeId != null && state.keyword.isNotBlank()) {
+                    val categoryId = state.selectedCategoryId
+                    if (categoryId != null && state.keyword.isNotBlank()) {
                         viewModel.handleIntent(
                             CategorizationRulesIntent.SaveRule(
                                 CategorizationRule(
                                     id = state.editingRule?.id ?: 0,
-                                    envelopeId = envelopeId,
+                                    categoryId = categoryId,
                                     keyword = state.keyword,
                                     isActive = true
                                 )
@@ -136,7 +136,7 @@ fun CategorizationRulesScreen(
 @Composable
 fun RuleItem(
     rule: CategorizationRule,
-    envelope: com.cashflow.app.domain.model.Envelope?,
+    category: com.cashflow.app.domain.model.BudgetCategory?,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -152,7 +152,7 @@ fun RuleItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                envelope?.let {
+                category?.let {
                     Icon(
                         imageVector = getIconForString(it.icon ?: "Folder"),
                         contentDescription = null,
@@ -168,7 +168,7 @@ fun RuleItem(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = envelope?.name ?: "Unknown Envelope",
+                        text = category?.name ?: "Unknown Category",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -190,16 +190,16 @@ fun RuleItem(
 @Composable
 fun RuleDialog(
     rule: CategorizationRule?,
-    envelopes: List<com.cashflow.app.domain.model.Envelope>,
-    selectedEnvelopeId: Long?,
+    categories: List<com.cashflow.app.domain.model.BudgetCategory>,
+    selectedCategoryId: Long?,
     keyword: String,
-    onEnvelopeSelected: (Long) -> Unit,
+    onCategorySelected: (Long) -> Unit,
     onKeywordChange: (String) -> Unit,
     onSave: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var envelopeExpanded by remember { mutableStateOf(false) }
-    val selectedEnvelope = envelopes.find { it.id == selectedEnvelopeId }
+    var categoryExpanded by remember { mutableStateOf(false) }
+    val selectedCategory = categories.find { it.id == selectedCategoryId }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -217,16 +217,16 @@ fun RuleDialog(
                 )
 
                 ExposedDropdownMenuBox(
-                    expanded = envelopeExpanded,
-                    onExpandedChange = { envelopeExpanded = !envelopeExpanded }
+                    expanded = categoryExpanded,
+                    onExpandedChange = { categoryExpanded = !categoryExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedEnvelope?.name ?: "Select Envelope",
+                        value = selectedCategory?.name ?: "Select Category",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Envelope") },
+                        label = { Text("Budget Category") },
                         leadingIcon = {
-                            selectedEnvelope?.let {
+                            selectedCategory?.let {
                                 Icon(
                                     imageVector = getIconForString(it.icon ?: "Folder"),
                                     contentDescription = null,
@@ -235,27 +235,27 @@ fun RuleDialog(
                                 )
                             }
                         },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = envelopeExpanded) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor()
                     )
                     ExposedDropdownMenu(
-                        expanded = envelopeExpanded,
-                        onDismissRequest = { envelopeExpanded = false }
+                        expanded = categoryExpanded,
+                        onDismissRequest = { categoryExpanded = false }
                     ) {
-                        envelopes.forEach { envelope ->
+                        categories.forEach { category ->
                             DropdownMenuItem(
-                                text = { Text(envelope.name) },
+                                text = { Text(category.name) },
                                 onClick = {
-                                    onEnvelopeSelected(envelope.id)
-                                    envelopeExpanded = false
+                                    onCategorySelected(category.id)
+                                    categoryExpanded = false
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = getIconForString(envelope.icon ?: "Folder"),
+                                        imageVector = getIconForString(category.icon ?: "Folder"),
                                         contentDescription = null,
-                                        tint = envelope.color
+                                        tint = category.color
                                     )
                                 }
                             )
