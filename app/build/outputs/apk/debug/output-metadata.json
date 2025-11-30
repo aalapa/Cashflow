@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1,
-      "versionName": "1.0",
-      "outputFile": "cashflow-app-debug.apk"
+      "versionCode": 2,
+      "versionName": "1.0.1",
+      "outputFile": "cashflow-app-debug-v1.0.1-2.apk"
     }
   ],
   "elementType": "File",

@@ -5,6 +5,36 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+import java.io.FileOutputStream
+
+// Auto-increment version code
+val versionPropertiesFile = rootProject.file("version.properties")
+val versionProperties = Properties()
+
+if (versionPropertiesFile.exists()) {
+    versionProperties.load(FileInputStream(versionPropertiesFile))
+} else {
+    versionProperties["VERSION_CODE"] = "1"
+    versionProperties["VERSION_NAME"] = "1.0.0"
+}
+
+// Increment version code on every build
+val currentVersionCode = (versionProperties["VERSION_CODE"] as String).toInt()
+val newVersionCode = currentVersionCode + 1
+versionProperties["VERSION_CODE"] = newVersionCode.toString()
+
+// Update version name (patch number)
+val versionNameParts = (versionProperties["VERSION_NAME"] as String).split(".")
+val major = versionNameParts[0].toInt()
+val minor = versionNameParts.getOrElse(1) { "0" }.toInt()
+val patch = versionNameParts.getOrElse(2) { "0" }.toInt() + 1
+versionProperties["VERSION_NAME"] = "$major.$minor.$patch"
+
+// Save updated version properties
+versionProperties.store(FileOutputStream(versionPropertiesFile), "Version properties")
+
 android {
     namespace = "com.cashflow.app"
     compileSdk = 34
@@ -13,8 +43,8 @@ android {
         applicationId = "com.cashflow.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = newVersionCode
+        versionName = versionProperties["VERSION_NAME"] as String
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -59,7 +89,9 @@ android {
         val variant = this
         variant.outputs.all {
             val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            output.outputFileName = "cashflow-app-${variant.buildType.name}.apk"
+            val versionName = versionProperties["VERSION_NAME"] as String
+            val versionCode = versionProperties["VERSION_CODE"] as String
+            output.outputFileName = "cashflow-app-${variant.buildType.name}-v${versionName}-${versionCode}.apk"
         }
     }
 }
