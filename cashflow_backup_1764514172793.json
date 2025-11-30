@@ -1,0 +1,514 @@
+{
+    "exportDate": "2025-11-30T14:49:42.079896Z",
+    "accounts": [
+        {
+            "id": 2,
+            "name": "Devi Chase Checking",
+            "type": "CHECKING",
+            "startingBalance": 1298.49,
+            "currentBalance": 357.78999999999996
+        },
+        {
+            "id": 1,
+            "name": "Kannan Bank of America",
+            "type": "CHECKING",
+            "startingBalance": 1463.2,
+            "currentBalance": 133.4800000000007
+        }
+    ],
+    "income": [
+        {
+            "id": 1,
+            "name": "Kannan Salary",
+            "amount": 2622.0,
+            "recurrenceType": "BI_WEEKLY",
+            "startDate": "2025-11-21",
+            "accountId": 1,
+            "isActive": true
+        },
+        {
+            "id": 2,
+            "name": "Devi Salary",
+            "amount": 1750.0,
+            "recurrenceType": "BI_WEEKLY",
+            "startDate": "2025-11-29",
+            "accountId": 2,
+            "isActive": true
+        }
+    ],
+    "incomeOverrides": [
+        {
+            "id": 1,
+            "incomeId": 1,
+            "date": "2025-11-21",
+            "amount": 2622.57
+        },
+        {
+            "id": 2,
+            "incomeId": 2,
+            "date": "2025-11-29",
+            "amount": 1931.13
+        }
+    ],
+    "bills": [
+        {
+            "id": 1,
+            "name": "Mortgage ",
+            "amount": 3993.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-01",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 2,
+            "name": "Frontier ",
+            "amount": 39.99,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-01",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 3,
+            "name": "Kannan Chase Freedom Credit Card",
+            "amount": 500.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-01",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 4,
+            "name": "Devi Amex Loan",
+            "amount": 180.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-01",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 5,
+            "name": "Kannan Chase Unlimited Credit card",
+            "amount": 500.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-01",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 6,
+            "name": "H.O.A",
+            "amount": 54.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-01",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 20,
+            "name": "Amex Hilton Credit card",
+            "amount": 0.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-01",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 8,
+            "name": "Kannan Quicksilver credit card",
+            "amount": 500.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-04",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 7,
+            "name": "Devi Discover Credit Card",
+            "amount": 500.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-05",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 9,
+            "name": "Devi Discover Credit Card",
+            "amount": 0.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-05",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 10,
+            "name": "Fidelity ",
+            "amount": 200.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-11",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 11,
+            "name": "Devi Chase Unlimited Credit card",
+            "amount": 625.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-12",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 12,
+            "name": "Kannan Amex Blue Credit card",
+            "amount": 653.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-12",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 13,
+            "name": "Devi Amex Credit card",
+            "amount": 500.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-15",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 14,
+            "name": "Devi Amazon Credit Card",
+            "amount": 300.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-17",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 15,
+            "name": "Kannan Discover  Credit card",
+            "amount": 400.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-17",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 16,
+            "name": "Kannan Savour Credit card",
+            "amount": 600.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-20",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 17,
+            "name": "Apple Credit card",
+            "amount": 0.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-23",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 18,
+            "name": "Mazda car loan",
+            "amount": 570.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-23",
+            "endDate": null,
+            "isActive": true
+        },
+        {
+            "id": 19,
+            "name": "Toyota Car Loan",
+            "amount": 770.0,
+            "recurrenceType": "MONTHLY",
+            "startDate": "2025-12-27",
+            "endDate": null,
+            "isActive": true
+        }
+    ],
+    "billOverrides": [
+        {
+            "id": 3,
+            "billId": 1,
+            "date": "2025-12-01",
+            "amount": 3991.1
+        },
+        {
+            "id": 4,
+            "billId": 3,
+            "date": "2025-12-01",
+            "amount": 371.54
+        },
+        {
+            "id": 2,
+            "billId": 4,
+            "date": "2025-12-01",
+            "amount": 179.08
+        },
+        {
+            "id": 1,
+            "billId": 5,
+            "date": "2025-12-01",
+            "amount": 250.0
+        },
+        {
+            "id": 5,
+            "billId": 8,
+            "date": "2025-12-04",
+            "amount": 596.49
+        },
+        {
+            "id": 6,
+            "billId": 7,
+            "date": "2025-12-05",
+            "amount": 467.75
+        }
+    ],
+    "billPayments": [
+        {
+            "id": 2,
+            "billId": 1,
+            "accountId": 1,
+            "paymentDate": "2025-12-01",
+            "amount": 3991.1,
+            "timestamp": "2025-11-30T08:45:54.152453",
+            "transactionId": 6
+        },
+        {
+            "id": 3,
+            "billId": 3,
+            "accountId": 1,
+            "paymentDate": "2025-12-01",
+            "amount": 371.54,
+            "timestamp": "2025-11-30T08:46:33.092262",
+            "transactionId": 7
+        },
+        {
+            "id": 1,
+            "billId": 4,
+            "accountId": 2,
+            "paymentDate": "2025-12-01",
+            "amount": 179.08,
+            "timestamp": "2025-11-29T19:39:07.479664",
+            "transactionId": 4
+        },
+        {
+            "id": 4,
+            "billId": 5,
+            "accountId": 1,
+            "paymentDate": "2025-12-01",
+            "amount": 250.0,
+            "timestamp": "2025-11-30T08:46:45.656578",
+            "transactionId": 8
+        },
+        {
+            "id": 5,
+            "billId": 20,
+            "accountId": 1,
+            "paymentDate": "2025-12-01",
+            "amount": 0.0,
+            "timestamp": "2025-11-30T08:47:00.708604",
+            "transactionId": 9
+        },
+        {
+            "id": 6,
+            "billId": 8,
+            "accountId": 1,
+            "paymentDate": "2025-12-04",
+            "amount": 596.49,
+            "timestamp": "2025-11-30T08:47:22.766295",
+            "transactionId": 10
+        },
+        {
+            "id": 7,
+            "billId": 7,
+            "accountId": 2,
+            "paymentDate": "2025-12-05",
+            "amount": 467.75,
+            "timestamp": "2025-11-30T08:47:46.154810",
+            "transactionId": 11
+        },
+        {
+            "id": 8,
+            "billId": 9,
+            "accountId": 2,
+            "paymentDate": "2025-12-05",
+            "amount": 0.0,
+            "timestamp": "2025-11-30T08:47:56.988038",
+            "transactionId": 12
+        },
+        {
+            "id": 9,
+            "billId": 11,
+            "accountId": 2,
+            "paymentDate": "2025-12-12",
+            "amount": 625.0,
+            "timestamp": "2025-11-30T08:48:26.420634",
+            "transactionId": 13
+        }
+    ],
+    "transactions": [
+        {
+            "id": 13,
+            "accountId": 2,
+            "type": "BILL_PAYMENT",
+            "amount": 625.0,
+            "date": "2025-12-12",
+            "timestamp": "2025-11-30T08:48:26.420634",
+            "description": "Bill payment",
+            "relatedBillId": 11,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 12,
+            "accountId": 2,
+            "type": "BILL_PAYMENT",
+            "amount": 0.0,
+            "date": "2025-12-05",
+            "timestamp": "2025-11-30T08:47:56.988038",
+            "description": "Bill payment",
+            "relatedBillId": 9,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 11,
+            "accountId": 2,
+            "type": "BILL_PAYMENT",
+            "amount": 467.75,
+            "date": "2025-12-05",
+            "timestamp": "2025-11-30T08:47:46.154810",
+            "description": "Bill payment",
+            "relatedBillId": 7,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 10,
+            "accountId": 1,
+            "type": "BILL_PAYMENT",
+            "amount": 596.49,
+            "date": "2025-12-04",
+            "timestamp": "2025-11-30T08:47:22.766295",
+            "description": "Bill payment",
+            "relatedBillId": 8,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 9,
+            "accountId": 1,
+            "type": "BILL_PAYMENT",
+            "amount": 0.0,
+            "date": "2025-12-01",
+            "timestamp": "2025-11-30T08:47:00.708604",
+            "description": "Bill payment",
+            "relatedBillId": 20,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 8,
+            "accountId": 1,
+            "type": "BILL_PAYMENT",
+            "amount": 250.0,
+            "date": "2025-12-01",
+            "timestamp": "2025-11-30T08:46:45.656578",
+            "description": "Bill payment",
+            "relatedBillId": 5,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 7,
+            "accountId": 1,
+            "type": "BILL_PAYMENT",
+            "amount": 371.54,
+            "date": "2025-12-01",
+            "timestamp": "2025-11-30T08:46:33.092262",
+            "description": "Bill payment",
+            "relatedBillId": 3,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 6,
+            "accountId": 1,
+            "type": "BILL_PAYMENT",
+            "amount": 3991.1,
+            "date": "2025-12-01",
+            "timestamp": "2025-11-30T08:45:54.152453",
+            "description": "Bill payment",
+            "relatedBillId": 1,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 4,
+            "accountId": 2,
+            "type": "BILL_PAYMENT",
+            "amount": 179.08,
+            "date": "2025-12-01",
+            "timestamp": "2025-11-29T19:39:07.479664",
+            "description": "Bill payment",
+            "relatedBillId": 4,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 5,
+            "accountId": 2,
+            "type": "TRANSFER",
+            "amount": 1600.0,
+            "date": "2025-11-30",
+            "timestamp": "2025-11-30T08:45:10.056125",
+            "description": "transfer",
+            "relatedBillId": null,
+            "relatedIncomeId": null,
+            "toAccountId": 1
+        },
+        {
+            "id": 3,
+            "accountId": 2,
+            "type": "INCOME",
+            "amount": 1931.13,
+            "date": "2025-11-29",
+            "timestamp": "2025-11-29T19:38:18.707005",
+            "description": "Income received",
+            "relatedBillId": null,
+            "relatedIncomeId": 2,
+            "toAccountId": null
+        },
+        {
+            "id": 2,
+            "accountId": 1,
+            "type": "MANUAL_ADJUSTMENT",
+            "amount": -343.16,
+            "date": "2025-11-22",
+            "timestamp": "2025-11-22T22:04:22.522662",
+            "description": "Discover",
+            "relatedBillId": null,
+            "relatedIncomeId": null,
+            "toAccountId": null
+        },
+        {
+            "id": 1,
+            "accountId": 1,
+            "type": "INCOME",
+            "amount": 2622.57,
+            "date": "2025-11-21",
+            "timestamp": "2025-11-21T14:03:50.178572",
+            "description": "Income received",
+            "relatedBillId": null,
+            "relatedIncomeId": 1,
+            "toAccountId": null
+        }
+    ]
+}
