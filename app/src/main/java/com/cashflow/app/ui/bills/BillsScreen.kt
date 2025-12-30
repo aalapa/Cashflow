@@ -364,13 +364,24 @@ fun BillOccurrenceItem(
                 text = formatDate(occurrence.dueDate),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (occurrence.isPaid) FontWeight.Normal else FontWeight.SemiBold,
-                color = if (occurrence.isPaid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                color = when {
+                    occurrence.isPaid -> MaterialTheme.colorScheme.onSurfaceVariant
+                    occurrence.isOverdue -> Color(0xFFEF4444)
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
             )
             if (occurrence.isPaid) {
                 Text(
                     text = "✓ Paid",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF10B981)
+                )
+            } else if (occurrence.isOverdue) {
+                Text(
+                    text = "⚠ Overdue",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFEF4444),
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -382,7 +393,11 @@ fun BillOccurrenceItem(
                 text = formatCurrency(occurrence.amount),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = if (occurrence.isPaid) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFFEF4444)
+                color = when {
+                    occurrence.isPaid -> MaterialTheme.colorScheme.onSurfaceVariant
+                    occurrence.isOverdue -> Color(0xFFEF4444)
+                    else -> Color(0xFFEF4444)
+                }
             )
             if (!occurrence.isPaid) {
                 IconButton(
@@ -398,7 +413,12 @@ fun BillOccurrenceItem(
                 }
                 Button(
                     onClick = onMarkPaid,
-                    modifier = Modifier.height(32.dp)
+                    modifier = Modifier.height(32.dp),
+                    colors = if (occurrence.isOverdue) {
+                        ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    }
                 ) {
                     Text("Paid", style = MaterialTheme.typography.labelSmall)
                 }
@@ -945,10 +965,11 @@ fun GroupedBillOccurrenceItem(
             .padding(horizontal = 8.dp, vertical = 0.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (occurrence.isPaid) 
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            else 
-                MaterialTheme.colorScheme.surface
+            containerColor = when {
+                occurrence.isPaid -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                occurrence.isOverdue -> Color(0xFFEF4444).copy(alpha = 0.1f)
+                else -> MaterialTheme.colorScheme.surface
+            }
         ),
         shape = if (isLast) MaterialTheme.shapes.medium else androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
     ) {
@@ -971,10 +992,11 @@ fun GroupedBillOccurrenceItem(
                             text = bill.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (occurrence.isPaid) 
-                                MaterialTheme.colorScheme.onSurfaceVariant 
-                            else 
-                                MaterialTheme.colorScheme.onSurface
+                            color = when {
+                                occurrence.isPaid -> MaterialTheme.colorScheme.onSurfaceVariant
+                                occurrence.isOverdue -> Color(0xFFEF4444)
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }
                         )
                         if (occurrence.isPaid) {
                             Row(
@@ -992,6 +1014,24 @@ fun GroupedBillOccurrenceItem(
                                     text = "Paid",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        } else if (occurrence.isOverdue) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Text(
+                                    text = "⚠",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFFEF4444)
+                                )
+                                Text(
+                                    text = "Overdue",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFFEF4444),
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
@@ -1024,10 +1064,11 @@ fun GroupedBillOccurrenceItem(
                             text = formatCurrency(occurrence.amount),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = if (occurrence.isPaid) 
-                                MaterialTheme.colorScheme.onSurfaceVariant 
-                            else 
-                                MaterialTheme.colorScheme.error
+                            color = when {
+                                occurrence.isPaid -> MaterialTheme.colorScheme.onSurfaceVariant
+                                occurrence.isOverdue -> Color(0xFFEF4444)
+                                else -> MaterialTheme.colorScheme.error
+                            }
                         )
                         
                         // Actions row for unpaid bills
@@ -1053,9 +1094,13 @@ fun GroupedBillOccurrenceItem(
                                 Button(
                                     onClick = onMarkPaid,
                                     modifier = Modifier.height(36.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.secondary
-                                    )
+                                    colors = if (occurrence.isOverdue) {
+                                        ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                                    } else {
+                                        ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
                                 ) {
                                     Text("Paid", style = MaterialTheme.typography.labelMedium)
                                 }

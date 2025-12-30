@@ -252,8 +252,17 @@ fun IncomeOccurrenceItem(
             Text(
                 text = formatDate(occurrence.date),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = if (occurrence.isOverdue) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurface
             )
+            if (occurrence.isOverdue) {
+                Text(
+                    text = "⚠ Overdue",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFEF4444),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -263,7 +272,7 @@ fun IncomeOccurrenceItem(
                 text = formatCurrency(occurrence.amount),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF10B981)
+                color = if (occurrence.isOverdue) Color(0xFFEF4444) else Color(0xFF10B981)
             )
             IconButton(
                 onClick = onMarkReceived,
@@ -272,7 +281,7 @@ fun IncomeOccurrenceItem(
                 Icon(
                     Icons.Default.CheckCircle,
                     contentDescription = "Mark as Received",
-                    tint = Color(0xFF10B981)
+                    tint = if (occurrence.isOverdue) Color(0xFFEF4444) else Color(0xFF10B981)
                 )
             }
             IconButton(

@@ -174,19 +174,27 @@ class CashFlowRepositoryImpl(
         val payments = billPaymentDao.getPaymentsForBill(bill.id).first()
         val paymentMap = payments.associateBy { it.paymentDate }
         
+        // Get today's date to determine overdue status
+        val timeZone = TimeZone.currentSystemDefault()
+        val today = Clock.System.now().toLocalDateTime(timeZone).date
+        
         var currentDate = startDate
         while (currentDate <= endDate) {
             if (shouldOccurOnDate(bill.startDate, bill.endDate, bill.recurrenceType, currentDate)) {
                 val amount = billOverrides[currentDate] ?: bill.amount
                 val payment = paymentMap[currentDate]
+                val isPaid = payment != null
+                // A bill is overdue if it's not paid and the due date is before today
+                val isOverdue = !isPaid && currentDate < today
                 occurrences.add(
                     BillOccurrence(
                         bill = bill,
                         dueDate = currentDate,
                         amount = amount,
-                        isPaid = payment != null,
+                        isPaid = isPaid,
                         paymentDate = payment?.paymentDate,
-                        paidFromAccountId = payment?.accountId
+                        paidFromAccountId = payment?.accountId,
+                        isOverdue = isOverdue
                     )
                 )
             }
@@ -202,6 +210,10 @@ class CashFlowRepositoryImpl(
         // Get all transactions for this income to check if received
         val transactions = transactionDao.getTransactionsBetween(startDate, endDate).first().map { it.toDomain() }
         
+        // Get today's date to determine overdue status
+        val timeZone = TimeZone.currentSystemDefault()
+        val today = Clock.System.now().toLocalDateTime(timeZone).date
+        
         var currentDate = startDate
         while (currentDate <= endDate) {
             if (shouldOccurOnDate(income.startDate, null, income.recurrenceType, currentDate)) {
@@ -213,15 +225,19 @@ class CashFlowRepositoryImpl(
                     it.relatedIncomeId == income.id && 
                     it.date == currentDate 
                 }
+                val isReceived = receivedTransaction != null
+                // Income is overdue if it's not received and the date is before today
+                val isOverdue = !isReceived && currentDate < today
                 
                 occurrences.add(
                     IncomeOccurrence(
                         income = income,
                         date = currentDate,
                         amount = amount,
-                        isReceived = receivedTransaction != null,
+                        isReceived = isReceived,
                         receivedDate = receivedTransaction?.date,
-                        receivedIntoAccountId = receivedTransaction?.accountId
+                        receivedIntoAccountId = receivedTransaction?.accountId,
+                        isOverdue = isOverdue
                     )
                 )
             }

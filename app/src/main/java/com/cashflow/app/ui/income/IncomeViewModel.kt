@@ -41,11 +41,13 @@ class IncomeViewModel(
                 .collect { incomeList ->
                     val timeZone = kotlinx.datetime.TimeZone.currentSystemDefault()
                     val today = kotlinx.datetime.Clock.System.now().toLocalDateTime(timeZone).date
+                    // Include 14-day grace period lookback for overdue income
+                    val startDate = kotlinx.datetime.LocalDate.fromEpochDays(today.toEpochDays() - 14)
                     val endDate = kotlinx.datetime.LocalDate.fromEpochDays(today.toEpochDays() + 365) // Next year
                     
                     val occurrencesMap = incomeList.associateWith { income ->
-                        // Get future occurrences and filter out already received ones
-                        repository.getFutureIncomeOccurrences(income, today, endDate)
+                        // Get occurrences including past 14 days (for overdue) and future, filter out already received ones
+                        repository.getFutureIncomeOccurrences(income, startDate, endDate)
                             .filter { !it.isReceived }
                     }.mapKeys { it.key.id }
 

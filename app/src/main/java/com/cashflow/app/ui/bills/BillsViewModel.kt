@@ -41,11 +41,13 @@ class BillsViewModel(
                 .collect { bills ->
                     val timeZone = kotlinx.datetime.TimeZone.currentSystemDefault()
                     val today = kotlinx.datetime.Clock.System.now().toLocalDateTime(timeZone).date
+                    // Include 14-day grace period lookback for overdue bills
+                    val startDate = kotlinx.datetime.LocalDate.fromEpochDays(today.toEpochDays() - 14)
                     val endDate = kotlinx.datetime.LocalDate.fromEpochDays(today.toEpochDays() + 365) // Next year
                     
                     val occurrencesMap = bills.associateWith { bill ->
-                        // Get future occurrences and filter out already paid ones
-                        repository.getFutureBillOccurrences(bill, today, endDate)
+                        // Get occurrences including past 14 days (for overdue) and future, filter out already paid ones
+                        repository.getFutureBillOccurrences(bill, startDate, endDate)
                             .filter { !it.isPaid }
                     }.mapKeys { it.key.id }
                     

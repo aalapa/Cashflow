@@ -8,6 +8,7 @@ data class BillOccurrence(
     val amount: Double,
     val isPaid: Boolean = false,
     val paymentDate: LocalDate? = null,
-    val paidFromAccountId: Long? = null
+    val paidFromAccountId: Long? = null,
+    val isOverdue: Boolean = false
 )
 

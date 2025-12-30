@@ -8,6 +8,7 @@ data class IncomeOccurrence(
     val amount: Double,
     val isReceived: Boolean = false,
     val receivedDate: LocalDate? = null,
-    val receivedIntoAccountId: Long? = null
+    val receivedIntoAccountId: Long? = null,
+    val isOverdue: Boolean = false
 )
 
